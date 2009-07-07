@@ -1,0 +1,33 @@
+#Archlive定制配置文件
+KERNEL="/etc/mkinitcpio.d/kernel26.kver"
+
+# 模块清单文件夹
+LISTDIR="list"
+#LISTDIR="list list28 list29"
+# 模块清单   默认在list文件夹中读取
+MODULES="000_base 001_app 002_xorg 003_xlib 004_xapps"
+
+# 自定义软件仓
+#REPO=/mnt/sda3/cpkg
+#REPO_Name=archlive
+
+# 附加软件包清单
+PKGLIST=""
+# 需要删除的目录，overlay中对应目录不删除
+DELDIR="usr/share/doc usr/share/devhelp usr/share/gtk-doc usr/share/wallpapers"
+
+# 模块化文件下载地址
+TGZURL="http://archlive.googlecode.com/files/"
+# 个性化定制
+# 预装主题、图标、鼠标指针、附加字体等
+# 主题文件包名称  **-theme.tgz
+THEME="mac4lin"
+# 图标文件包名称  **-icons.tgz"
+ICON="gos3"
+#ICON="gos3 mac4lin"
+# 鼠标指针文件包名称  **-cursor.tgz"
+CURSOR=""
+#CURSOR="mac4lin"
+#附加字体包 **-font.tgz
+EXTRAFONTS="iYaHei"
+#EXTRAFONTS="iYaHei yahei"

@@ -1,0 +1,604 @@
+#!/bin/bash
+# 本脚本是Carbon Jiao修改自godane的archiso-live脚本，
+# 将linux-live应用打Archlive的制作。
+# 自动化创建基于Arch GNU/Linux的Live系统
+# 该脚本旨在创建仅包含zh_CN lovale的最精简live系统
+# 为简化googlecode的svn版本维护的简单化，将部分配置文件
+# 打包放在http://archlive.googlecode.com/files/中
+# 脚本运行的时候会先自动下载部分配置文件。。。
+
+# usage: usage <exitvalue>
+usage ()
+{
+    echo " usage ${APPNAME} [选项] 命令 <命令选项>"
+    echo " 一般选项:"
+    echo "    -f               强制覆盖现有的工作目录等，全部重新制作"
+    echo "    -i CPIO_CONFIG   用CONFIG 作为archlive启动内核配置文件. 默认: ${CPIOCONFIG}"
+    echo "    -n NOLZMA        不使用squashfs+lzma压缩模块，而使用基本squashfs."
+    echo "    -c CDNAME        liblinuxlive脚本默认文件夹名. 默认: archlive"
+    echo "    -b BOOT		启动选项(syslinux,grub,grub-gfx)"
+    echo "    -M MODULES       livecd的模块. 默认: ${MODULES}"
+    echo "    -m MODULESCOPY   从指定的文件夹拷贝附加模块，比如程序模块等. 默认: 无"
+    echo "    -a ADDON_DIR     从指定文件夹制作附加设置模块. 默认: 无"
+    echo "    -t <iso,disk>    目标镜像类型. 默认iso."
+    echo "    -v               运行输出结果."
+    echo "    -h               本帮助信息."
+    echo " 命令:"
+    echo "     install <工作目录>        : 将程序安装到工作目录下"
+    echo "     squash <工作目录>         : 从指定的目录创建squash模块"
+    echo "     imgprepare <工作目录>     : 从指定的目录制作archlive启动内核模块及基本模块等"
+    echo "     img <工作目录> <目标镜像> : 从指定目录创建目标镜像"
+    echo "     all <工作目录> <目标镜像> : 顺序执行以上所有命令"
+    exit $1
+}
+if [ "$EUID" != "0" ]; then
+    echo "错误: 必须以root用户运行本制作脚本."
+    exit 1
+fi
+
+# 挂载aufs文件系统并判断是否已经挂载成功
+modprobe aufs
+if [ $? -ne 0 ]; then
+   echo "无法装载aufs文件系统模块,退出。"
+   exit 1
+fi
+
+REPO_ADD="$(pwd)/../../repo/repo-add"
+CPIOCONFIG="$(pwd)/archlive-mkinitcpio.conf"
+CACHE="/var/cache/pacman/pkg"
+EXTRAPACKAGEDIR="$(pwd)/packages"
+PKGLIST=""
+QUIET="y"
+FORCE="n"
+IMG_TYPE="iso"
+DELDIR=""
+BOOT=""
+CDLABEL="Archlive"
+PUBLISHER="http://archlive.googlecode.com/"
+AUTHOR="Carbon Jiao"
+
+error () { echo -e "\033[1;31;40m!!! \033[1;37;40m$@\033[1;0m"; }
+warn ()  { echo -e "\033[1;33;40m*** \033[1;37;40m$@\033[1;0m"; }
+info () { echo -e "\033[1;32;40m>>> \033[1;37;40m$@\033[1;0m"; }
+
+# 装载archlive的配置文件
+if [ -f $(pwd)/config ]; then
+    . $(pwd)/config
+fi
+
+# 装载archlive软件仓等相关配置
+if [ -f "$(pwd)/pacman.conf" ]; then
+	PACMANCONF="$(pwd)/pacman.conf"
+else
+	PACMANCONF="/etc/pacman.conf"
+fi
+
+APPNAME=$(basename "${0}")
+KERNEL="/etc/mkinitcpio.d/kernel26.kver"
+ROOT_MOD="$(ls -1 $(pwd)/$LISTDIR | head -1)"
+CDNAME="archlive"
+LIVELINUX="../../linux-live/archlive"
+PACMAN="pacman"
+#REPO=/mnt/sda3/cpkg
+
+# 检测、配置输入的命令
+while getopts 'i:P:b:M:m:a:t:c:nfvh' arg; do
+    case "${arg}" in
+	i) CPIOCONFIG="${OPTARG}" ;;
+	b) BOOT="${OPTARG}" ;;
+	M) MODULES="${OPTARG}" ;;
+	m) MODULESCOPY="${OPTARG}" ;;
+	a) ADDON_DIR="${OPTARG}" ;;
+	t) IMG_TYPE="${OPTARG}" ;;
+	c) CDNAME="${OPTARG}" ;;
+	n) NOLZMA="n" ;;
+	f) FORCE="y" ;;
+	v) QUIET="n" ;;
+        h|?) usage 0 ;;
+        *) echo "无效参数 '${arg}'"; usage 1 ;;
+    esac
+done
+
+#去掉空格
+PKGLIST="$(echo $MODULES)"
+
+shift $(($OPTIND - 1))
+echo "参数: $@"
+
+[ $# -le 1 ] && usage 1
+
+command_name="${1}"
+work_dir=""
+imgname=""
+
+case "${command_name}" in
+    install) work_dir="${2}" ;;
+    squash) work_dir="${2}" ;;
+    imgprepare) work_dir="${2}" ;;
+    img) work_dir="${2}"; imgname="${3}" ;;
+    all) work_dir="${2}"; imgname="${3}" ;;
+    *) warn "无效命令 '${command_name}'"; usage 1 ;;
+esac
+
+if [ "x${BOOT}" = "x" ]; then BOOT="syslinux"; fi
+
+[ "x${work_dir}" = "x" ] && (warn "必须指定工作目录" && usage 1)
+if [ "x${imgname}" = "x" ]; then imgname="$work_dir/archlive-$(date +%F).iso"; fi
+
+#archlive最终软件清单
+PKGFILE="$work_dir/packages.list"
+
+if [ "${NOLZMA}" = "n" ]; then
+	EXT="sqfs"
+	OPTION="-nolzma"
+else
+	EXT="lzm"
+	OPTION=""
+fi
+
+info "${APPNAME} : 程序设置"
+echo " Archlive启动内核镜像配置文件:   ${CPIOCONFIG}"
+echo "    pacman.conf文件:   ${PACMANCONF}"
+echo "                         启动程序:   ${BOOT}"
+echo "                         工作目录:   ${work_dir}"
+echo "                         标镜像名:   ${imgname}"
+echo "                      目标镜像类型:   ${IMG_TYPE}"
+echo "                         模块类型:   ${EXT}"
+sleep 1
+
+IMGROOT="${work_dir}/img"
+union="${work_dir}/union"
+lastbr="${work_dir}/empty"
+moduleplace="${IMGROOT}/${CDNAME}/base"
+moduledir="${work_dir}/modules"
+INSTROOT="${moduledir}/$(basename ${ROOT_MOD} .list)"
+
+_kversion ()
+{
+    source ${INSTROOT}${KERNEL}
+    echo ${ALL_kver}
+}
+
+copy2root()
+{
+	cp -rp $1/* ${union}
+}
+
+remove()
+{
+   rm -vRf "$@"
+   return
+}
+
+# 自定义软件仓
+# $1 预建立软件仓的位置
+# $2 预建立的软件仓的名称
+custom_repo () 
+{
+    for pkgfile in $(ls $1/*.pkg.tar.gz); do
+	sh ${REPO_ADD} $1/$2.db.tar.gz $pkgfile
+    done
+    rm -rf $1/$2.db.tar.gz.old
+}
+is_in_pacmanconf ()
+{ 
+   if [ $(cat ${PACMANCONF} | sed -r "s/#.*//" | egrep  "^\[*${REPO_Name}\]$") = "[${REPO_Name}]" ]; then
+	echo "1"
+   else
+	echo "0"
+   fi
+}
+
+# 将自定义的软件仓加入到PACMANCONF中，默认第一优先
+# pacman.conf须是在# and they will be used before the default mirrors.行后开始定义软件仓.
+add_customrepo2pacmanconf ()
+{
+   sed -i "/# and they will be used before the default mirrors./ a\
+	\ \n[${REPO_Name}]\
+	\nServer = file://$REPO" ${PACMANCONF}
+}
+
+command_install () {
+
+    if [  "x$REPO_Name" != "x" -a "x$REPO" != "x" ]; then
+       info "建立自定义软件仓..."
+       #python ../../repo/gen_repo ${REPO} ${REPO_Name}
+       custom_repo ${REPO} ${REPO_Name}
+       echo "自定义软件仓建立完成"
+       if [ $(is_in_pacmanconf) = "0" ]; then add_customrepo2pacmanconf; fi
+    fi
+    info "开始进行Archlive的制作..."
+    if [ -e "${work_dir}" -a "${FORCE}" = "n" ]; then
+        error "错误: 工作目录'${work_dir}'已经存在 , 退出."
+        error "       加入 -f 参数覆盖现有安装目录"
+        exit 1
+    fi
+
+    info "准备目标镜像根目录结构及启动的相关配置文件"
+    if [ ! -d $(pwd)/cd-root ]; then 
+	echo "下载Archlive光盘根目录结构文件cd-root.tgz"
+	wget -q "${TGZURL}/cd-root.tgz"  &> /dev/null
+	echo "释放Archlive光盘根目录结构cd-root.tgz"
+	tar -xzvpf "$(pwd)/cd-root.tgz"  &> /dev/null
+    fi
+    CDROOT="$(pwd)/cd-root"
+
+    info "准备Archlive 系统配置文件目录overlay"
+
+    if [ ! -d $(pwd)/overlay ]; then 
+	if [ ! -f $(pwd)/overlay.tgz ]; then
+		echo "下载Archlive附加配置文件overlay.tgz"
+		wget -q "${TGZURL}/overlay.tgz"  &> /dev/null
+	fi
+	echo "释放Archlive附加配置文件overlay.tgz"
+	tar -xzvpf "$(pwd)/overlay.tgz"  &> /dev/null
+    fi
+    OVERLAY=$(pwd)/overlay
+    echo "将主题、图标、鼠标指针文件及字体等放在overlay模块中..."
+    if [ -d ${OVERLAY}/usr/share/themes ]; then
+	 rm -rf ${OVERLAY}/usr/share/themes
+	 mkdir -p ${OVERLAY}/usr/share/themes
+    else
+	 mkdir -p ${OVERLAY}/usr/share/themes
+    fi
+    for theme in ${THEME}; do 
+       if [ ! -f "$(pwd)/${theme}-theme.tgz" ]; then
+	    echo "下载主题包文件${theme}-theme.tgz"
+          wget -q "${TGZURL}/${theme}-theme.tgz"  &> /dev/null
+       fi
+	 echo "释放主题包${theme}-theme.tgz"
+       tar -xzvpf "${theme}-theme.tgz" -C "${OVERLAY}/usr/share/themes/"   &> /dev/null
+    done
+
+    if [ ! -d ${OVERLAY}/usr/share/icons ]; then
+		mkdir -p ${OVERLAY}/usr/share/icons
+    fi
+    for icon in ${ICON}; do 
+       if [ ! -f "$(pwd)/${icon}-icons.tgz" ]; then
+	    echo "下载图标文件${icon}-icons.tgz"
+          wget -q "${TGZURL}/${icon}-icons.tgz"  &> /dev/null
+       fi
+	 echo "释放图标文件包${icon}-icons.tgz"
+       tar -xzvpf "${icon}-icons.tgz" -C "${OVERLAY}/usr/share/icons/"  &> /dev/null
+    done
+
+    for cursor in ${CURSOR}; do 
+       if [ ! -f "$(pwd)/${cursor}-cursor.tgz" ]; then
+	    echo "下载鼠标指针文件包${cursor}-cursor.tgz"
+          wget -q "${TGZURL}/${cursor}-cursor.tgz"  &> /dev/null
+       fi
+	 echo "释放鼠标指针文件包${cursor}-cursor.tgz"
+       tar -xzvpf "${cursor}-cursor.tgz" -C "${OVERLAY}/usr/share/icons/"  &> /dev/null
+    done
+
+    for font in ${EXTRAFONTS}; do 
+       if [ ! -f "$(pwd)/${font}-font.tgz" ]; then
+	    echo "下载附加字体包文件${font}-font.tgz"
+          wget -q "${TGZURL}/${font}-font.tgz"  &> /dev/null
+       fi
+	 echo "释放附加字体包${font}-font.tgz"
+       tar -xzvpf "${font}-font.tgz" -C "${OVERLAY}/usr/share/fonts/TTF/"  &> /dev/null
+    done
+
+    if [ -d "${OVERLAY}/home/arch" ]; then
+            chown -R arch:users "${OVERLAY}/home/arch"
+            chmod -R 700 "${OVERLAY}/home/arch"
+    fi
+    chown -R root:root "${OVERLAY}/root"
+    chmod -R 700 "${OVERLAY}/root"
+
+    find "${OVERLAY}" -name ".svn" -type d > exclude
+    rm exclude
+    info "overlay准备完毕"
+
+    mkdir -p "${IMGROOT}"
+    mkdir -p "${INSTROOT}"
+    mkdir -p "${lastbr}"
+    mkdir -p "${union}"
+    mkdir -p "${moduleplace}"
+    mkdir -p "${moduledir}"
+    #mkdir -p ${IMGROOT}/${CDNAME}/{addons,modules,optional,rootcopy}
+    mkdir -p ${IMGROOT}/${CDNAME}/{base,modules,optional,rootcopy}
+    cp -af ${CDROOT}/* "${IMGROOT}"
+
+    info "开始将$LISTDIR里面的软件安装到对应模块文件夹"
+
+    mount -t aufs -o br:${lastbr}=rw aufs ${union}
+    if [ $? -ne 0 ]; then 
+        error "无法在$UNION挂载aufs文件系统."
+        exit 1
+    fi
+
+     # 软件安装日志文件夹
+    if [ -e $work_dir/log ]; then
+	rm -R $work_dir/log
+    fi
+    mkdir -p $work_dir/log
+
+    for mod in ${MODULES}; do
+        mkdir -p "${moduledir}/${mod}"
+        mount -o remount,add:0:${moduledir}/${mod}=rw aufs ${union}
+        mount -o remount,mod:${lastbr}=ro aufs ${union}
+        lastbr="${moduledir}/${mod}"
+
+        if [ -e "${union}/var/lib/pacman/db.lck" ]; then
+            rm -f ${union}/var/lib/pacman/db.lck
+        fi
+        
+        mkdir -p "${union}/var/lib/pacman"	
+
+        mkdir -p "${union}/dev"
+        mknod ${union}/dev/console c 5 1 >/dev/null
+        mknod ${union}/dev/null c 1 3 >/dev/null
+        mknod ${union}/dev/zero c 1 5 >/dev/null
+        
+        $PACMAN -Sy --noprogressbar --noconfirm --config "${PACMANCONF}" -fr "${union}"
+
+        cat  "$(pwd)/$LISTDIR/${mod}.list" | grep -v "^#" | while read pkgname; do
+            info "安装 $pkgname"
+            $PACMAN -S -f --needed --noconfirm --config "${PACMANCONF}" --cachedir "$CACHE" -r "$union" $pkgname | tee -a ${work_dir}/log/${mod}-current.log
+            if [ $? -ne 0 ]; then
+                warn "$pkgname 没有正确安装"
+                cat ${work_dir}/log/${mod}-current.log >> ${work_dir}/log/${mod}-errors.log
+            fi
+        done	
+        if [ -e "$(pwd)/$LISTDIR/${mod}.removelist" ]; then
+            cat "$(pwd)/$LISTDIR/${mod}.removelist" | grep -v "^#" | while read pkgname; do
+                info "删除 $pkgname"
+                $PACMAN -R -d -n --noprogressbar --needed --noconfirm --config "${PACMANCONF}" -r "$union" $pkgname &> /dev/null
+            done
+        fi
+
+        if [ -f ${moduledir}/001_devel/1 ]; then
+		rm -rf ${moduledir}/001_devel/1
+	  fi
+	
+        if [ -e "${union}/etc/ld.so.conf" ]; then
+            ldconfig -r ${union}
+        fi
+
+        if [ -d "${union}/usr/share/icons" ]; then
+            remove "${union}/usr/share/icons/hicolor/icon-theme.cache"
+            remove "${union}/usr/share/icons/Rodent/icon-theme.cache"
+        fi
+
+          # 删除为宿主系统创建的内核镜像文件
+        find "${union}/boot" -name *.img -delete
+
+
+          # 清理系统
+        info "清理无用文件..."
+        find "${union}" -name *.pacnew -name *.pacsave -name *.pacorig -delete
+
+        if [ "${mod:4:7}" = "archpwn" ]; then
+            kill_dirs="var/cache/man var/cache/pacman var/log/* var/mail tmp/ initrd"
+        else
+            kill_dirs="var/cache/man var/cache/pacman var/log/* var/mail tmp/* initrd ${DELDIR}"
+        fi
+        for x in ${kill_dirs}; do
+            if [ -e "${union}/${x}" ]; then
+                rm -Rf "${union}/${x}"
+            fi
+        done
+
+          #  删除除zh_CN外的语言文件
+	find ${union}/usr/share/locale/* -maxdepth 0 -type d ! -iregex ".*zh.CN" -exec rm -rf {} \;
+	find ${union}/usr/share/X11/locale/* -maxdepth 0 -type d ! -iregex ".*zh.C*" -exec rm -rf {} \;
+
+          #  删除除zh_CN及英文外的帮助文件
+	find ${union}/usr/share/man/* -maxdepth 0 -type d ! -name "man*" ! -iregex ".*zh.CN" -exec rm -rf {} \;
+
+          # 删除arch软件仓信息数据库
+	rm -rf ${union}/var/lib/pacman/sync/*
+
+        if [ "$BOOT" = "grub" -o "$BOOT" = "grub-gfx" ]; then
+            if [ -e "${union}/boot" -a -e "${OVERLAY}/boot" ]; then
+                #rm -rf "${IMGROOT}/boot"
+                cp -rf "${union}/boot" "${IMGROOT}"
+                cp -rf "${OVERLAY}/boot" "${IMGROOT}"
+            fi
+        else
+            if [ -e "${union}/boot" -a -e "${OVERLAY}/boot" ]; then
+                #rm -rf "${IMGROOT}/boot"
+                cp -rf "${union}/boot" "${IMGROOT}"
+                cp -rf "${OVERLAY}/boot" "${IMGROOT}"
+                rm -rf "${IMGROOT}/boot/grub"
+            fi
+        fi
+        
+    done
+
+    if [ -e "$(pwd)/isolinux" ]; then
+        cp -r "$(pwd)/isolinux" "${IMGROOT}"
+    fi
+
+     # 导出已经安装的软件清单
+    pacman -Q -r ${union} > ${PKGFILE}
+    cp -f ${PKGFILE} ${IMGROOT}/${CDNAME}/${CDNAME}.list
+
+    # 卸载UNION
+    info "卸载aufs件系统 ${union}."
+    umount -l ${union}
+
+    info "更新内核依赖关系"
+    kernelver=$(_kversion)
+    depmod -a -b "${INSTROOT}" "${kernelver}"
+        
+    # Clean up unionfs whiteout files
+    #echo "Removing unionfs .wh. files."
+    find ${moduledir} -type f -name ".wh.*" -exec rm {} \;
+    find ${moduledir} -type d -name ".wh.*" -exec rm -rf {} \;
+
+     # 备份Arch原始启动关机脚本，以便Larchin安装
+    for larchsavefile in ${moduledir}/000_base/etc/{rc.sysinit,rc.shutdown,rc.local}; do
+	cp -f ${larchsavefile} ${larchsavefile}.larchsave
+    done
+}
+
+command_squash () {
+
+    info "创建squash模块..."
+
+    start=$(date +%s)
+
+    if [ -d "${MODULESCOPY}" ]; then
+        cp -r ${MODULESCOPY}/* "${IMGROOT}/${CDNAME}/modules"
+    fi
+
+    for DIR in $MODULES; do
+        MOD="$(basename $DIR).${EXT}"
+        info "创建模块 $MOD"
+        if [ "${QUIET}" = "y" ]; then
+		if [ -d ${moduledir}/$DIR/usr/share/fonts ]; then 
+			chmod 755 ${moduledir}/$DIR/usr/share/fonts
+		fi
+		if [ -d ${moduledir}/$DIR/etc/fonts ]; then
+			chmod 755 ${moduledir}/$DIR/etc/fonts
+                fi
+            /sbin/mksquashfs ${moduledir}/$DIR ${moduleplace}/$MOD -noappend ${OPTION} > /dev/null
+        else
+            /sbin/mksquashfs ${moduledir}/$DIR ${moduleplace}/$MOD -noappend ${OPTION}
+        fi
+        chmod 0444 ${moduleplace}/$MOD
+    done
+
+    if [  -d $(pwd)/overlay ]; then 
+	    info "创建附加设置模块overlay.${EXT}..."
+	    OVERLAY="$(pwd)/overlay"
+	    if [ "${QUIET}" = "y" ]; then
+        	/sbin/mksquashfs "${OVERLAY}" "${IMGROOT}/${CDNAME}/base/overlay.${EXT}" -noappend  ${OPTION} >/dev/null
+    	    else
+		/sbin/mksquashfs "${OVERLAY}" "${IMGROOT}/${CDNAME}/base/overlay.${EXT}" -noappend ${OPTION}
+    	    fi
+	   chmod 0444 "${IMGROOT}/${CDNAME}/base/overlay.${EXT}"
+    fi
+
+    minutes=$(echo $start $(date +%s) | awk '{ printf "%0.2f",($2-$1)/60 }')
+    info "模块在 $minutes 分钟内完成创建."
+}
+
+command_imgprepare () {
+
+	info "创建基本模块archlive.sqfs (命令位置默认../linux-live/archlive/initrd_create)"
+
+	ln -sf ${LIVELINUX} archlive
+	cd archlive
+	sh ./initrd_create ${CDNAME}
+	cd ../
+	mv -f archlive/${CDNAME}.sqfs "${IMGROOT}/${CDNAME}/archlive.sqfs"
+	chmod 0444 "${IMGROOT}/${CDNAME}/archlive.sqfs"
+
+	basedir=${INSTROOT}
+	[ "${INSTROOT:0:1}" != "/" ] && basedir="$(pwd)/${INSTROOT}"
+
+	info "准备archlive内核及内核镜像"
+		
+	if [ -f "${IMGROOT}/boot/vmlinuz26" ]; then
+		mv -f "${IMGROOT}/boot/vmlinuz26" "${IMGROOT}/${CDNAME}/boot/vmlinuz26"
+	fi
+	if [ ! -f "${IMGROOT}/${CDNAME}/boot/vmlinuz26" ]; then
+		cp -f "${basedir}/boot/vmlinuz26" "${IMGROOT}/${CDNAME}/boot/vmlinuz26"
+	fi
+
+	if [ ! -e "${CPIOCONFIG}" ]; then
+		error "错误: live系统启动内核镜像配置文件 '${CPIOCONFIG}' 不存在, 退出."
+		exit 1
+	fi
+	kernelver=$(_kversion)
+	info "创建live系统启动的内核镜像..."
+	echo "配置文件 ${CPIOCONFIG}, "
+	echo "基于目录 ${basedir}, "
+	echo "archlive内核版本 ${kernelver} "
+
+	if [ "${QUIET}" = "y" ]; then
+		sh ../../mkinitcpio/mkinitcpio -c "${CPIOCONFIG}" -b "${basedir}" -k "${kernelver}" -g "${IMGROOT}/${CDNAME}/boot/archlive.img" >/dev/null
+        	ret=$?
+    	else
+		sh ../../mkinitcpio/mkinitcpio -c "${CPIOCONFIG}" -b "${basedir}" -k "${kernelver}" -g "${IMGROOT}/${CDNAME}/boot/archlive.img"
+		ret=$?
+	fi
+
+	if [ $ret -ne 0 ]; then
+		error "错误: 内核镜像创建失败..."
+		exit 1
+	else
+              info "基本模块archlive.sqfs及内核启动镜像制作成功！"
+    	fi
+}
+
+command_img () {
+
+    # 拷贝附加程序模块
+      if [ -d $EXTRAPACKAGEDIR ]; then
+         for mod in $EXTRAPACKAGEDIR/*.lzm; do
+            info "拷贝附加程序模块 $mod ..."
+            cp $mod $IMGROOT/${CDNAME}/modules/
+         done
+      fi
+	
+	bootflags=""
+	if [ "$BOOT" = "grub" -o "$BOOT" = "grub-gfx" ]; then
+		tst=0
+		pacman -Q grub >/dev/null 2>&1
+		tst=$(($tst + $?))
+		pacman -Q grub-gfx >/dev/null 2>&1
+		tst=$(($tst + $?))
+		if [ $tst -ge 2 ]; then
+			error "宿主系统不存在grub或者grub-gfx. 无法继续!"
+			exit 1
+		fi	
+		mkdir -p "${IMGROOT}/boot/grub"
+		cp -r /usr/lib/grub/i386-pc/* "${IMGROOT}/boot/grub"    
+		bootflags="-b boot/grub/stage2_eltorito"
+	elif [ "$BOOT" = "syslinux" ] || [ "$BOOT" = "isolinux" ]; then
+		if ! pacman -Qi syslinux >/dev/null 2>&1; then
+			error "宿主系统不存在$BOOT. 无法继续!"
+			exit 1
+		fi
+		mkdir -p "${IMGROOT}/boot/isolinux"
+		cp /usr/lib/syslinux/* "${IMGROOT}/boot/isolinux"
+		bootflags="-b boot/isolinux/isolinux.bin -c boot/isolinux/boot.cat"
+	else
+		error "没有指定启动管理程序，用 -b 参数指定"
+		info "  目前支持的bootloader引导管理程序:"
+		info "     grub"
+		info "     grub-gfx"
+		info "     isolinux"
+		exit 1
+	fi
+
+    if [ "$IMG_TYPE" == "disk" ]; then
+        info "创建USB DISK镜像img..."
+        mkusbimg "${IMGROOT}" "${imgname}"
+    elif [ "$IMG_TYPE" = "iso" ]; then
+        info "创建ISO镜像..."
+        qflag=""
+        #[ "${QUIET}" = "y" ] && qflag="-q"
+        mkisofs ${qflag} -v -J -R -D -r -l $bootflags -uid 0 -gid 0 \
+	    -input-charset utf-8 -p "${AUTHOR}" \
+            -no-emul-boot -boot-load-size 4 -boot-info-table \
+            -publisher "${PUBLISHER}" \
+            -A "${CDLABEL}" -V "${CDLABEL}" \
+            -o "${imgname}" "${IMGROOT}"
+       # This adds USB support
+       isohybrid "${imgname}"
+       md5sum "${imgname}" > "${imgname}".md5
+       info " ${imgname}制作成功！"
+    else
+		error "无效的镜像文件格式 '$IMG_TYPE'"
+		exit 1
+     fi
+}
+
+if [ "${command_name}" = "install" -o "${command_name}" = "all" ]; then
+	command_install
+fi
+if [ "${command_name}" = "squash" -o "${command_name}" = "all" ]; then
+	command_squash
+fi
+if [ "${command_name}" = "imgprepare" -o "${command_name}" = "all" ]; then
+    command_imgprepare
+fi
+if [ "${command_name}" = "img" -o "${command_name}" = "all" ]; then
+    command_img
+fi

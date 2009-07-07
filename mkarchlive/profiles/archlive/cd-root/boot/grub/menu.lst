@@ -1,0 +1,49 @@
+timeout 30
+default 2
+fontfile /BOOT/GRUB/FONTS
+#splashimage /BOOT/ARCHLIVE.XPM.GZ
+#gfxmenu /BOOT/message
+foreground ffffff
+outline
+title                         ★Archlive 启动菜单★                              
+clear
+title 
+clear
+
+title [01] -- Archlive 常规模式                                             [01]
+kernel /carbon/boot/vmlinuz26  elevator=deadline ramdisk_size=60% aufs vga=791 from=carbon
+initrd /carbon/boot/carbon.img
+
+title [02] -- Archlive 安全模式                                             [02]
+kernel /boot/vmlinuz26  elevator=deadline ramdisk_size=60% aufs acpi=off noapic pci=bios from=carbon
+initrd /carbon/boot/vmlinuz26
+
+title [03] -- 直接启动PE                                                    [03]
+chainloader /BOOT/GR2PE.BIN
+
+title [04] -- 先驱动USB2.0后再启动PE（适用老主板＋新U盘）                   [04]
+map --mem /BOOT/DOS2PE.IMG (fd0)
+map --hook
+chainloader (fd0)+1
+rootnoverify (fd0)
+
+title [05] -- 从USB-HDD的第一分区启动                                       [05]
+map (hd0) (hd1)
+map (hd1) (hd0)
+root(hd1,0)
+chainloader (hd1,0)+1
+
+title [06] -- 从第一硬盘的第一分区启动                                      [06]
+rootnoverify (hd0,0)
+makeactive
+chainloader +1
+
+title [07] -- 从第一个搜索发现的 Windows Vista启动                          [07]
+find --set-root /bootmgr
+chainloader /bootmgr
+
+title [08] -- 重启                                                          [08]
+reboot
+
+title [09] -- 关机                                                          [09]
+halt

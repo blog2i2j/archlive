@@ -1,0 +1,13 @@
+# vim: set ft=sh:
+run_hook ()
+{
+    info -n "  ->加载udev检测硬件... "
+    echo > /proc/sys/kernel/hotplug
+    #udevstart="$(/bin/date +%s%0N)"
+    /sbin/udevd --daemon
+    /sbin/udevadm trigger
+    /sbin/udevadm settle
+    #udevend="$(/bin/date +%s%0N)"
+    #hl " 在$((($udevend-$udevstart)/1000000))ms内完成."; echo
+    echo ""
+}

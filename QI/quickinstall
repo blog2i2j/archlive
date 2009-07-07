@@ -1,0 +1,115 @@
+usage ()
+{
+    echo "usage ${程序名} [选项] 命令 <命令选项>"
+    echo " 一般选项:"
+    echo "    -f               强制覆盖现有的工作目录等，全部重新制作"
+    echo "    -t TARGET        预安装的目标分区."
+    echo "    -c CACHE DIR     Arch软件包存储位置"
+    echo "    -C CUSTOM_REPO	  本地自定义repo"
+    echo "    -u union         工作文件临时挂载位置"
+    echo "    -h               本帮助信息."
+    exit $1
+}
+if [ "$EUID" != "0" ]; then
+    echo "错误: 必须以root用户运行本制作脚本."
+    exit 1
+fi
+
+error () { echo -e "\033[1;31;40m!!! \033[1;37;40m$@\033[1;0m"; }
+warn ()  { echo -e "\033[1;33;40m*** \033[1;37;40m$@\033[1;0m"; }
+info () { echo -e "\033[1;32;40m>>> \033[1;37;40m$@\033[1;0m"; }
+
+# $1 预创建repo的文件夹——软件包存放位置
+# $2 预创建的repo仓库名称
+create_repo ()
+{
+	for pkgfile in $(ls $1/*.pkg.tar.gz); do
+		repo-add $1/$2.db.tar.gz $pkgfile
+	done
+}
+
+#mount -f /dev/sda4 /mnt/sda4
+TARGET=/dev/sda8
+UNION=/mnt/sda8
+PACMAN=pacman
+CUSTOM_REPO=/mnt/sda3/cpkg
+union=/mnt/sda4/union
+CACHE="/mnt/sda3/pkg"
+
+# 检测、配置输入的命令
+while getopts 'i:t:c:M:m:a:t:c:nfvh' arg; do
+    case "${arg}" in
+	t) TARGET="${OPTARG}" ;;
+	c) CACHE="${OPTARG}" ;;
+	C) CUSTOM_REPO="${OPTARG}" ;;
+	u) union="${OPTARG}" ;;
+        h|?) usage 0 ;;
+        *) echo "无效参数 '${arg}'"; usage 1 ;;
+    esac
+done
+APPNAME=$(basename "${0}")
+
+mkdir -p ${UNION}
+#umount -l ${TARGET}
+#if [ -d ${union} ]; then
+#	umount -l ${union}
+#	rm -rf ${union}
+#fi
+#mkreiserfs -f ${TARGET}
+#mount ${TARGET} ${UNION}
+
+info "建立本地自定义软件仓"
+for db in CUSTOM_REPO/${db}.db.tar.gz; do
+	rm -f CUSTOM_REPO/${db}.db.tar.gz
+done
+create_repo ${CUSTOM_REPO} archlive
+
+info "准备文件系统"
+mkdir -p ${union}
+mount -t aufs -o br:${UNION}=rw aufs ${union}
+if [ $? -ne 0 ]; then 
+	echo "挂载 $union aufs文件系统错误."
+	exit 1
+fi
+
+# 装载软件仓等相关配置
+if [ -f "$(pwd)/pacman.conf" ]; then
+	PACMANCONF="$(pwd)/pacman.conf"
+else
+	PACMANCONF="/etc/pacman.conf"
+fi
+
+mkdir -p "${union}/var/lib/pacman"	
+mkdir -p "${union}/dev"
+mknod ${union}/dev/console c 5 1 >/dev/null
+mknod ${union}/dev/null c 1 3 >/dev/null
+mknod ${union}/dev/zero c 1 5 >/dev/null
+
+if [ -e "${union}/var/lib/pacman/db.lck" ]; then
+	rm -f ${union}/var/lib/pacman/db.lck
+fi
+
+info "开始安装程序"
+$PACMAN -Sy --noconfirm --config "${PACMANCONF}" --cachedir "${CACHE}" -fr "${union}"
+cat  "$(pwd)/list" | grep -v "^#" | while read pkgname; do
+	echo "安装 $pkgname"
+	$PACMAN -S -f --needed --noconfirm --config "${PACMANCONF}" --cachedir "$CACHE" -r "${union}" $pkgname
+done
+
+info "卸载并删除临时挂载点${union}"
+umount -l ${union}
+rm -rf ${union}
+
+info "开始清理文件系统"
+find ${UNION} -type f -name ".wh.*" -exec rm {} \;
+find ${UNION} -type d -name ".wh.*" -exec rm -rf {} \;
+
+info "删除除zh_CN外的语言文件"
+find ${UNION}/usr/share/locale/* -maxdepth 0 -type d ! -iregex ".*zh.CN" -exec rm -rf {} \;
+find ${UNION}/usr/share/X11/locale/* -maxdepth 0 -type d ! -iregex ".*zh.C*" -exec rm -rf {} \;
+
+info "删除除zh_CN及英文外的帮助文件"
+find ${UNION}/usr/share/man/* -maxdepth 0 -type d ! -name "man*" ! -iregex ".*zh.CN" -exec rm -rf {} \;
+
+info "将配置文件释放到目标分区"
+tar -xzvpf $(pwd)/overlay.tgz -C ${UNION}

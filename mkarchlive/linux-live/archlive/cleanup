@@ -1,0 +1,75 @@
+#!/bin/ash
+# Optional script to be called instead of final reboot/shutdown
+# To safely switch back to initrd root and unmount everything possible
+# Mainly needed if you use changes= boot parameter in order to correctly
+# unmount the changes device/filesystem. Also needed to free up all loops
+# (to properly free disk space) if you delete an used lzm module.
+#
+# Call it this way in your shutdown script:
+#   cd /mnt/live
+#   exec ./cleanup <dev/console >dev/console 2>&1
+
+export PATH=.:/mnt/live:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib
+
+. liblinuxlive
+
+# This script needs to be re-executed to free up any shell
+# from the union which may be used (eg. /union/bin/bash)
+if [ ! "$RE_EXEC_CLEANUP" ]; then
+   export RE_EXEC_CLEANUP=1
+   header "Archlive开始关机..."
+   echo "切换根目录到archlive.sqfs模块挂载的目录"
+   pivot_root . $UNION
+   echo "再次执行cleanup动作"
+   exec chroot . /cleanup "$@" <dev/console >dev/console 2>&1
+   fatal "如果看到此消息，之前的步骤一定出错!"
+fi
+
+# kill all processes which can be killed
+killall_unneeded $(pidof cleanup)
+
+echo "卸载aufs文件系统$UNION"
+fumount -l $UNION/dev/pts
+fumount -l $UNION/dev
+fumount -l $UNION/proc
+fumount -l $UNION/sys
+fumount $UNION/boot
+fumount $UNION
+
+echo "卸载镜像"
+fumount $IMAGES/*
+
+echo "卸载其它挂载点"
+fumount $COPY2RAM
+fumount $ISOMOUNT
+fumount $XINO
+fumount $CHANGES
+fumount $MEMORY
+
+fumount $MOUNTDIR/*
+
+# eject cdrom devices
+for MNT in $(ls -1 $MOUNTDIR 2>/dev/null); do
+   CD=$(cat /proc/sys/dev/cdrom/info 2>/dev/null | grep name | grep "$MNT")
+   if [ "$CD" -a "$MNT" ]; then
+      echo "弹出 $MNT..."
+      /bin/eject -m /dev/$MNT >/dev/null 2>&1
+      echo "光驱将在6秒内关闭..."
+      sleep 6
+      /bin/eject -t /dev/$MNT >/dev/null 2>&1
+   fi
+done
+
+if [ "$DEBUG_IS_ENABLED" ]; then
+   echo "卸载成功，可以 $1"
+   echo "用 'losetup' 和 'cat /proc/mounts'来验证."
+   /bin/ash
+fi
+
+sync
+echo $1
+# $1 = action, eg. poweroff or reboot
+if [ "$1" = "" ]; then reboot -f; fi
+if [ "$1" = "halt" ]; then poweroff -f; else $1 -f; fi
+
+fatal "如果看到此消息，之前的步骤一定出错!"

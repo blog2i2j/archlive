@@ -1,0 +1,724 @@
+﻿#!/bin/bash
+# 本脚本是Carbon Jiao制作的Archlive安装程序，基于shell Xdialog的图形界面。
+# 目前支持两种安装方式：
+# 1、用archlive启动时，复制运行的archlive安装到目标分区;
+# 2、根据指定的软件清单来快速安装Arch GNU/Linux;
+# 待加强：
+# 1、优化、勘误;
+# 2、加入Arch官方安装方式（爱好者自行加入）;
+# 3、多语言支持;
+#
+#2009-07-07 更新：如果启动前插入了U盘或者移动硬盘导致盘符错乱(sdb...)也可以正常安装.
+#		使用pamcan.static来安装arch软件包，以使在非Arch环境下也可以采用本安装程序根据软件清单快速安装Arch GNU/Linux。
+#
+
+if [ "$EUID" != "0" ]; then
+    echo "错误: 必须以root用户运行本制作脚本."
+    exit 1
+fi
+#if [ "x$(whereis Xdialog)" = "x" ]; then
+#	echo "错误，本安装程序须要xdialog的支持，请先安装此程序。"
+#	exit 1
+#fi
+
+Xdialog --version 2>&1 >/dev/null
+if [ $? -ne 0 ]; then
+	echo "错误，本安装程序须要xdialog的支持，请先安装此程序。"
+	exit 1
+fi
+
+if [ ! -f /usr/lib/liblinuxlive ]; then
+	wget http://archlive.googlecode.com/hg/mkarchlive/linux-live/archlive/liblinuxlive
+	. ./liblinuxlive
+else
+	. /usr/lib/liblinuxlive
+fi
+
+APPNAME=$(basename "${0}")
+
+NEW_INSTALL="全新安装Arch GNU/Linux(暂未支持)——按照官方安装指南一步步安装"
+NEW_QUICKINSTALL="全新快速安装Arch GNU/Linux(暂未支持)——利用软件清单快速自定义安装"
+COPY_INSTALL="复制安装Archlive——将目前运行的这个Archlive系统复制安装到目标分区"
+#INSTALL_LOG=/tmp/install.log_$$
+# 修正后可以用随机数
+INSTALL_LOG=/tmp/install.log
+
+# 安装分区挂载位置
+if [ ! -d /tmp/install ]; then mkdir -p /tmp/install; fi
+INSTALL=/tmp/install
+
+warnlogo="/usr/share/icons/gOS3_Icons/scalable/actions/process-stop.svg"
+
+# 没有此功能的提示
+function no_this_function ()
+{
+	Xdialog --title "没有此功能" --backtitle "没有此功能" --no-close \
+		--icon $warnlogo \
+		--yesno "目前还没有该功能，是否重新选择安装方式？" 0 0
+
+	if [ $? -eq 0 ]; then
+		echo "提示： 目前没有此功能，请重新选择安装方式:"  >>${INSTALL_LOG}
+		mainmenu
+	else
+		echo "$(date +%D" "%T)	没有重新选择安装方式，选择退出安装程序" >>${INSTALL_LOG}
+	fi
+}
+
+# 选择关闭或者取消程序的提示
+function closed_prog ()
+{
+	echo "$(date +%D" "%T)	选择了取消，现在退出程序." >>${INSTALL_LOG}
+	Xdialog --title "警告！" --time-out 20 --no-cancel --no-buttons \
+		--infobox "选择了取消，现在退出程序。" 5 40
+	exit 1
+}
+# 功能模块：错误提示
+function errors ()
+{
+	if [ $? -ne 0 ]; then
+		Xdialog --title "$BOX_TITLE" --backtitle "$BACKTITLE" --no-close \
+			--icon $warnlogo \
+			--yesno "出现错误, 查看详情?" 0 0
+		if [ $? -eq 0 ]; then
+			Xdialog --title "$BOX_TITLE" --backtitle "错误信息:" --no-cancel \
+				--textbox ${INSTALL_LOG} 20 64
+		fi
+		exit 1
+	fi
+}
+# 准备快速安装的软件清单
+function prepare_softlist ()
+{
+	if [ -f /tmp/soft.list ]; then rm -f /tmp/soft.list; fi
+	if [ -f $(pwd)/soft.list }; then
+		cp $(pwd)/soft.list /tmp/soft.list
+	else
+		wget http://archlive.googlecode.com/files/soft.list
+		cp soft.list /tmp/soft.list
+	fi
+	SOFT_LIST=/tmp/soft.list
+	Xdialog --stdout --title "编辑softlist" --no-close \
+		--yesno "编辑预安装的软件清单?" 0 0
+	if [ $? -eq 0 ]; then
+		Xdialog --title "编辑softlist" --fixed-font \
+			--editbox $SOFT_LIST 0 0 2>$SOFT_LIST$$
+		if [ $? -eq 0 ]; then 
+			mv -f $SOFT_LIST$$ $SOFT_LIST
+		fi
+	fi
+	echo "$(date +%D" "%T)	$SOFT_LIST编辑完成!结果如下： " >>${INSTALL_LOG}
+	cat $SOFT_LIST >>${INSTALL_LOG}
+	echo "--------------- $SOFT_LIST --------------------"  >>${INSTALL_LOG}
+}
+
+function prepare_installer ()
+{
+	#使用pacman.static作为安装程序，可以在非Arch下快速安装Arch了
+	[ -f /tmp/usr/bin/pacman.static ] && PACMAN=/tmp/usr/bin/pacman.static
+	[ -f /usr/bin/pacman.static ] && PACMAN=/usr/bin/pacman.static
+	if [ "$(uname -m)" = "x86_64" ]; then 
+    			PKGARG="http://repo.archlinux.fr/x86_64"
+	else 	
+			PKGARG="http://repo.archlinux-br.org/i686"
+	fi
+	if [ "$PACMAN" = "" ]; then
+		cd /tmp
+		echo "$(date +%D" "%T)	系统无pacman.static现在开始下载" >>${INSTALL_LOG}
+		wget -c $PKGARG/$(links -dump $PKGARG | grep "pacman-static-" | cut -d " " -f 1) 2>&1  >>${INSTALL_LOG}
+		if [ $? -gt 0 ]; then
+			echo "错误: 下载失败" >>${INSTALL_LOG}
+			Xdialog --title "无法下载pacman安装程序包！" --timeout 20 --no-close \
+				--infobox "无法下载pacman安装程序包！请确认网络是否正常连接，然后再使用本程序！" 0 0
+		fi
+		tar -xzvf pacman-static*.pkg.tar.gz 2>&1 >>${INSTALL_LOG}
+	fi
+	[ -f /tmp/usr/bin/pacman.static ] && PACMAN=/tmp/usr/bin/pacman.static
+	[ -f /tmp/usr/bin/repo-add ] && REPO-ADD=/tmp/usr/bin/repo-add
+	if [ "$PACMAN" = ""  -o "${REPO-ADD} ]; then
+		echo "错误: 无法找到pacman.static程序，请确认下载的包是否完整!" >>${INSTALL_LOG}
+		exit 1
+	fi
+}
+# 功能函数：在文件夹$1下创建软件仓$2
+function create_repo ()
+{
+	echo "$(date +%D" "%T)	在文件夹$1下创建软件仓$2" >>${INSTALL_LOG}
+	for pkgfile in $(ls $1/*.pkg.tar.gz); do
+		REPO-ADD $1/$2.db.tar.gz $pkgfile  2>&1 >>${INSTALL_LOG}
+	done
+}
+# 功能函数：判断某一软件仓是否已经在pacman.conf中定义
+function is_in_pacmanconf ()
+{ 
+	if [ "x$(cat ${PACMANCONF} | sed -r "s/#.*//" | egrep  "\[*${REPO_NAME}\]")" = "x" ]; then echo "0"; fi
+}
+# 功能函数：将指定自定义软件仓配置加入到pacman.conf
+function add_customrepo2pacmanconf ()
+{
+   if [ "$(is_in_pacmanconf ${REPO_NAME} ${PACMANCONF})" = "0" ]; then
+	sudo sed -i "/# uncommented to enable the repo./ a\
+		\ \n#本地自定义软件仓\n[${REPO_NAME}]\
+		\nServer = file://${REPO_DIR} \n" ${PACMANCONF}
+	if [ $? -eq 0 ]; then
+		echo "添加${REPO_DIR}下的软件仓${REPO_NAME}成功!" >>${INSTALL_LOG}
+	else 
+		echo "添加${REPO_DIR}下的软件仓${REPO_NAME}添加错误！请查看${PACMANCONF}！" >>${INSTALL_LOG}
+		edit_pacmanconf
+		add_customrepo2pacmanconf		
+	fi
+   else
+	echo "该软件仓已经添加到${PACMANCONF},请检查${PACMANCONF}：" >>${INSTALL_LOG}
+   fi
+}
+# 是否使用自定义repo,如果使用，则将软件仓配置加入到pacman.conf
+function use_my_repo ()
+{
+	Xdialog --title "使用自定义软件" --no-close --yesno "是否使用自己编译的软件？" 0 0
+	if [ $? -eq 0 ]; then
+		echo "$(date +%D" "%T)	选择了使用自定义软件仓" >>${INSTALL_LOG}
+		REPO_DIR=$(Xdialog --stdout --title "请选择自定义软件存放的文件夹" --dselect /mnt 0 0)
+		REPO_NAME=$(Xdialog --stdout --title "安装GRUB的位置" --inputbox "输入自定义软件仓的名(方便以后使用)：" 0 0 "archlive")
+		create_repo ${REPO_DIR} ${REPO_NAME}
+	fi	
+	add_customrepo2pacmanconf	
+}
+# 编辑pacman.conf 及软件源清单文件
+function edit_pacmanconf ()
+{
+	Xdialog --stdout --title "编辑Arch源清单" --no-close \
+		--yesno "编辑Arch源清单mirrorlist?" 0 0
+	if [ $? -eq 0 ]; then
+		cp /etc/pacman.d/mirrorlist /tmp/mirrorlist
+		MIRROR_LIST=/tmp/mirrorlist
+		Xdialog --title "编辑Arch源清单mirrorlist" --fixed-font \
+			--editbox $MIRROR_LIST 0 0 2>$MIRROR_LIST$$
+		if [ $? -eq 0 ]; then 
+			mv -f $MIRROR_LIST$$ $MIRROR_LIST
+			sed -i "s#Include = /etc/pacman.d/mirrorlist#Include = /tmp/mirrorlist#g" $PACMANCONF
+		fi
+	fi
+
+	Xdialog --stdout --title "编辑pacman.conf" --no-close \
+		--yesno "编辑Arch软件仓配置文件pacman.conf?" 0 0
+	if [ $? -eq 0 ]; then
+		Xdialog --title "编辑pacman.conf" --fixed-font \
+			--editbox $PACMANCONF 0 0 2>$PACMANCONF$$
+		if [ $? -eq 0 ]; then 
+			mv -f $PACMANCONF$$ $PACMANCONF
+		fi
+	fi
+	echo "$(date +%D" "%T)	$PACMANCONF编辑完成!结果如下： " >>${INSTALL_LOG}
+	cat $PACMANCONF >>${INSTALL_LOG}
+	echo "--------------- $PACMANCONF --------------------"  >>${INSTALL_LOG}
+}
+# 功能模块：准备pacman.conf文件
+function prepare_pacmanconf ()
+{
+	if [ -f /tmp/pacman.conf ]; then rm -f /tmp/pacman.conf; fi
+	if [ -f $(pwd)/pacman.conf }; then
+		cp $(pwd)/pacman.conf /tmp/pacman.conf
+	else
+		cp /etc/pacman.conf /tmp/pacman.conf
+	fi
+	PACMANCONF=/tmp/pacman.conf
+	use_my_repo
+	edit_pacmanconf
+}
+# 功能模块：自定义软件包存储位置
+function prepare_cache ()
+{
+	Xdialog --title "软件包缓存位置" --no-close \
+		--yesno "是否另外指定Arch软件包缓存位置？\n——如果以前安装Arch时保存过软件包，\n选择该文件夹，可以加快安装速度。" 0 0
+	if [ $? -eq 0 ]; then
+		CACHE=$(Xdialog --stdout --title "请选择软件存放位置" --dselect /mnt/ 0 0)
+
+		# 将目标系统的/var/cache/pacman/pkg指向刚刚指定的软件包存储位置
+		if [ ! -d ${INSTALL}/var/cache/pacman ]; then mkdir -p ${INSTALL}/var/cache/pacman; fi
+		PWD=$(pwd)
+		cd ${INSTALL}/var/cache/pacman
+		if [ -d ${INSTALL}/var/cache/pacman/pkg ]; then rm -rf ${INSTALL}/var/cache/pacman/pkg; fi
+		ln -sfv $CACHE ./pkg
+		cd $PWD
+	else
+		CACHE=${INSTALL}/var/cache/pacman/pkg
+		if [ ! -d $CACHE ]; then mkdir -p $CACHE; fi
+	fi
+}
+# 功能模块：根据指定的软件清单，根据自定义的pacman.conf及自定义软件仓安装软件到目标文件夹
+function install_per_list ()
+{
+	mkdir -p "${INSTALL}/var/lib/pacman"	
+	mkdir -p "${INSTALL}/dev"
+	mknod -m 660 ${INSTALL}/dev/console c 5 1 >/dev/null
+	mknod -m 660 ${INSTALL}/dev/null c 1 3 >/dev/null
+	mknod -m 660 ${INSTALL}/dev/zero c 1 5 >/dev/null
+
+	[ -e "${INSTALL}/var/lib/pacman/db.lck" ] && (rm -f ${INSTALL}/var/lib/pacman/db.lck)
+
+	echo "$(date +%D" "%T)	开始安装程序,先更新软件仓库信息:" >>${INSTALL_LOG}
+	$PACMAN -Sy --noconfirm --config "${PACMANCONF}" --cachedir "${CACHE}" -fr "${INSTALL}" 2>&1 >>${INSTALL_LOG}
+	cat  "$SOFT_LIST" | grep -v "^#" | while read pkgname; do
+		echo "$(date +%D" "%T)	安装 $pkgname" >>${INSTALL_LOG}
+		$PACMAN -S -f --needed --noconfirm --config "${PACMANCONF}" --cachedir "$CACHE" \
+			-r "${INSTALL}" $pkgname 2>&1 >>${INSTALL_LOG}
+	done
+	echo "$(date +%D" "%T)	软件包安装完成！" >>${INSTALL_LOG}
+}
+# 功能模块：挂载所有分区
+function mount_all_partitions ()
+{
+	echo "$(date +%D" "%T)	挂载还没有挂载的分区" >>${INSTALL_LOG}
+	#Xdialog --title "挂载分区" --timeout 20 --no-close \
+	#	--progress "挂载还没有挂载的分区到/mnt下，请稍候" 0 0
+	# 想做个进度条，不太清除progress对应用法， 帮助不够全
+	#
+	Xdialog --title "挂载分区！" --timeout 20 --no-close \
+		--infobox "挂载还没有挂载的分区到/mnt下，请稍候！" 0 0
+	local FSTAB FSTABTMP
+	FSTAB="/etc/fstab"
+	if [ -f $FSTAB ]; then rm -f $FSTAB; fi
+	list_partition_devices | while read DEVICE; do
+		MNT=$(device_mountdir $DEVICE)
+		FS=$(device_filesystem $DEVICE)
+		OPT=$(fs_options $FS fstab)
+		if [ "$FS" = "swap" ]; then
+			fstab_add_line $FSTAB $DEVICE $MNT $FS $OPT
+		fi
+		if is_supported_filesystem "$FS"; then
+			if [ "x$OPT" != "x" ]; then
+				if [ ! -d /mnt/live/mnt/$(basename $DEVICE) ] || [ "x$(ls /mnt/live/mnt/$(basename $DEVICE))" = "x" ]; then
+					fstab_add_line $FSTAB $DEVICE $MNT $FS $OPT
+					if [ ! -d /$MNT ]; then mkdir -p "/$MNT"; fi
+				fi
+			fi
+		fi
+   	done
+	umount -a > /dev/null 2>&1
+	mount -a > /dev/null 2>&1
+	if [ $? -eq 0 ]; then
+		Xdialog --title "挂载分区完成！" --timeout 20 --no-close \
+			--infobox "挂载分区完成，现在进行下一步" 0 0
+		echo "$(date +%D" "%T)	挂载分区完成！" >>${INSTALL_LOG}
+	else
+		Xdialog --title "挂载部分分区失败" --timeout 50 --no-close \
+			--icon $warnlogo \
+			--infobox "请确认是否所有分区格式被目前系统所支持,！\n请更新系统后再运行本安装程序！" 0 0
+		echo "$(date +%D" "%T)	挂载部分分区失败，请确认是否所有分区被目前系统所支持！\n\
+			请更新系统后再运行本安装程序！" >>${INSTALL_LOG}
+		exit 1
+	fi
+}
+# 功能函数：选择分区并判断选择的分区是否符合要求
+function select_partition ()
+{
+	while true; do
+		partition=$(Xdialog --stdout --title "请选择$1分区" --dselect /mnt 0 0)
+		if [ $? -ne 0 ]; then
+			closed_prog
+			break
+		else
+			if [ "x$(blkid | cut -d ":" -f 1 | grep "$(basename $partition)")" != "x" ] &&\
+				[ ! -d /mnt/live$partition ] || [ "x$(ls /mnt/live$partition)" = "x" ]; then
+					echo $partition
+					break
+			else
+				Xdialog --title "！" --time-out 20 --no-cancel --no-buttons \
+					--infobox "错误！选择的分区无法作为安装的目标分区，\n请重新选择目标分区！" 5 40
+			fi
+		fi
+	done	
+}
+# 功能模块：选择安装的目标分区，/  /home /var /etc
+function select_target_partitions ()
+{
+	Xdialog --title "选择安装的目标分区" --timeout 30 --no-close \
+		--infobox "选择安装的目标分区, 可以将 / /home /var /etc 独立分区，\n\
+		如果所有的安装到一个分区，则选择分区位置时候选择根分区的位置即可。 " 0 0
+	echo "$(date +%D" "%T)	***现在选择安装的目标分区：" >>${INSTALL_LOG}
+	target_root=$(select_partition root)
+	echo "$(date +%D" "%T)	选择的目标系统root分区为${target_root}" >>${INSTALL_LOG}
+	target_boot=$(select_partition /boot)
+	echo "$(date +%D" "%T)	选择的目标系统/boot分区为${target_boot}" >>${INSTALL_LOG}
+	target_home=$(select_partition /home)
+	echo "$(date +%D" "%T)	选择的目标系统/home分区为${target_home}" >>${INSTALL_LOG}
+	target_var=$(select_partition /var)
+	echo "$(date +%D" "%T)	选择的目标系统/var分区为${target_var}" >>${INSTALL_LOG}
+	target_etc=$(select_partition /etc)
+	echo "$(date +%D" "%T)	选择的目标系统/etc分区为${target_etc}" >>${INSTALL_LOG}
+}
+# 功能模块：是否已经准备好分区，如果没有则调用gparted分区
+function prepare_partitions ()
+{
+	Xdialog --title "准备分区" --yesno "\n是否已经准备好安装的目标分区？\n如果还没有分区或者没有将目标分区格式化为需要的文件系统\n\
+						则选NO调用Gparted进行分区、格式化" 0 0
+	if [ $? -ne 0 ]; then
+		echo "$(date +%D" "%T)	选择调用分区软件Gparted进行分区" >>${INSTALL_LOG}
+		gparted >>${INSTALL_LOG}  2>&1 
+		echo "$(date +%D" "%T)	Gparted分区完成" >>${INSTALL_LOG}
+	fi
+}
+
+# 功能函数：文件夹拷贝
+# $1 需要复制的目录
+# ${INSTALL}安装的目标分区挂载的目录，例如/tmp/install
+function copydir ()
+{
+	d=$( dirname $1 )
+	if [ "${d}" == "/" ]; then
+		cp -af $1 ${INSTALL}
+		echo "$(date +%D" "%T)	复制$1到${INSTALL}" >>${INSTALL_LOG}
+	else
+		mkdir -p ${INSTALL}${d}
+		cp -af $1 ${INSTALL}${d}
+		echo "$(date +%D" "%T)	复制$1到${INSTALL}${d}" >>${INSTALL_LOG}
+	fi
+}
+# 功能函数，挂载分区到指定目录
+function mount_target_partition ()
+{
+	umount -l /dev/$(basename $1)
+	mount /dev/$(basename $1) $INSTALL/${2}
+	echo "$(date +%D" "%T)	挂载目标${targetpartition#target_}分区$1到$INSTALL/${2}" >>${INSTALL_LOG}
+}
+# 功能模块： 重新挂载目标分区
+function remount_target_partitions ()
+{
+	echo "$(date +%D" "%T)	挂载相应分区到$INSTALL" >>${INSTALL_LOG}
+
+	mkdir -p $INSTALL/{boot,home,var,etc}
+
+	# 这步花了些时间，不过最后查到bash的新的变量间接引用功能才得以优化！
+	for targetpartition in target_root target_boot target_var target_home target_etc; do
+		if [ "$targetpartition" = "target_root" ]; then
+			mount_target_partition ${!targetpartition} ""
+		else
+			if [ "${!targetpartition}" != "${target_root}" ]; then
+				mount_target_partition ${!targetpartition} ${targetpartition#target_}
+			fi
+		fi
+	done
+
+	echo "$(date +%D" "%T)	创建pacman需要的目录" >>${INSTALL_LOG}
+	! [ -d $INSTALL/var/lib/pacman ] && mkdir -p $INSTALL/var/lib/pacman
+	! [ -d /var/lib/pacman ] && mkdir -p /var/lib/pacman
+	echo "$(date +%D" "%T)	挂载proc sys dev以使mkinitcpio正常工作" >>${INSTALL_LOG}
+	! [ -d $INSTALL/proc ] && mkdir $INSTALL/proc
+	! [ -d $INSTALL/sys ] && mkdir $INSTALL/sys
+	! [ -d $INSTALL/dev ] && mkdir $INSTALL/dev
+	mount -t proc none $INSTALL/proc
+	mount -t sysfs none $INSTALL/sys
+	mount -o bind /dev $INSTALL/dev
+}
+# 功能模块：复制安装
+function copyall ()
+{
+	echo "$(date +%D" "%T)	复制文件到$INSTALL" >>${INSTALL_LOG}
+	Xdialog --title "复制文件" --time-out 20 --no-cancel --no-buttons \
+		--infobox "正在复制文件到目标分区" 5 40
+
+	for dir in /boot /usr /home /bin /etc /root /sbin /srv /lib /opt /home /var; do
+		copydir $dir
+	done	
+}
+# 功能模块：提示安装成功
+function finished_installation ()
+{
+	Xdialog --title "恭喜，安装完成！" --time-out 10 --no-cancel --no-buttons \
+		--infobox "恭喜, 安装完成！如果要看安装日志\n请直接打开文件${INSTALL_LOG}" 5 40
+	echo "$(date +%D" "%T)	安装完成，自动退出安装程序! " >>${INSTALL_LOG}
+}
+
+
+# 功能函数：获取指定设备的UUID
+# $1 设备名   比如/dev/sda1
+# 如果获取成功则返回设备的UUID，否则返回空
+getuuid()
+{
+    if [ "${1%%/[hs]d?[0-9]}" != "${1}" ]; then
+        echo "$(blkid -s UUID -o value ${1})"
+    fi
+}
+# 功能函数：更新fstab条目
+function add_fstab ()
+{
+	if [ "$uuid" = "n" ]; then $DEVICE=/dev/$(basename $1); else $DEVICE=$(getuuid /dev/$(basename $1)); fi
+	MNT=$(device_mountdir /dev/$(basename $1))
+	FS=$(device_filesystem /dev/$(basename $1))
+	OPT=$(fs_options $FS fstab)
+	if [ "x$OPT" != "x" ]; then fstab_add_line $FSTAB $DEVICE $MNT $FS $OPT; fi
+}
+# 功能模块： 更新fstab
+function update_target_fstab ()
+{
+	useuuid=$(Xdialog --stdout --screen-center --backtitle "选择fstab中设备描述方式" --title "fstab中设备描述用UUID还是设备名比如/dev/sda1" \
+                --radiolist "Select methods in fstab:" 15 80 0 \
+        	"1" "使用UUID"  off \
+		"2" "直接使用设备名"  ON)
+	if [ "$useuuid" = 1 ]; then uuid="y"; else uuid="n"; fi
+
+	mkdir $INSTALL/mnt
+	if [ -f $INSTALL/etc/fstab ]; then rm -f $INSTALL/etc/fstab; fi
+
+	echo "####  以下内容为Archlive installer自动添加 ####" >$INSTALL/etc/fstab
+	FSTAB="$INSTALL/etc/fstab"
+
+	for targetpartition in target_root target_boot target_var target_home target_etc; do
+		if [ "$targetpartition" = "target_root" ]; then
+			add_fstab ${!targetpartition} ""
+		else
+			if [ "${!targetpartition}" != "${target_root}" ]; then
+				add_fstab ${!targetpartition}
+			fi
+		fi
+	done
+
+	list_cdrom_devices | while read DEVICE; do
+		MNT=$(device_mountdir $DEVICE)
+		FS=$(device_filesystem $DEVICE)
+		if [ "$FS" = "" ]; then FS=iso9660; fi
+		fstab_add_line $FSTAB "#$DEVICE" $MNT $FS $(fs_options $FS fstab)
+	done
+
+	list_partition_devices | while read DEVICE; do
+		MNT=$(device_mountdir $DEVICE)
+		FS=$(device_filesystem $DEVICE)
+		OPT=$(fs_options $FS fstab)
+
+		if [ "$FS" = "swap" ]; then fstab_add_line $FSTAB $DEVICE $MNT $FS $OPT; fi
+
+		# If the partition has a valid filesystem, add it to fstab
+		if is_supported_filesystem "$FS"; then
+			if [ "x$OPT" != "x" ]; then fstab_add_line $FSTAB $DEVICE $MNT $FS $OPT; fi
+		fi
+	done
+
+	fstab_add_line $FSTAB none /proc proc defaults
+	fstab_add_line $FSTAB none /sys sysfs defaults
+	fstab_add_line $FSTAB none /dev/pts devpts gid=5,mode=620
+	fstab_add_line $FSTAB tmpfs /dev/shm tmpfs defaults
+	fstab_add_line $FSTAB tmpfs /tmp tmpfs defaults
+	fstab_add_line $FSTAB tmpfs /tmp tmpfs defaults,mode=1777
+	fstab_add_line $FSTAB tmpfs /var/tmp tmpfs defaults,mode=1777
+	fstab_add_line $FSTAB tmpfs /var/log tmpfs defaults,mode=0755,size=1M
+	echo "$(date +%D" "%T)	修正目标系统fstab中的盘符sdb sdc到sda(如果启动前出入了U盘启动可能就需要修正)" >>${INSTALL_LOG}
+	sed -i "s%sd[b-z]%sda%g" $FSTAB
+	
+	Xdialog --title "编辑、查看目标系统的fstab" --fixed-font \
+		--editbox $FSTAB 0 0 2>$FSTAB$$
+	if [ $? -eq 0 ]; then mv -f $FSTAB$$ $FSTAB; fi
+	echo "$(date +%D" "%T)	目标系统fstab更新完成!结果如下： " >>${INSTALL_LOG}
+	cat $FSTAB >>${INSTALL_LOG}
+	echo "-------- fstab --------------------"  >>${INSTALL_LOG}
+}
+
+# 功能模块：创建启动内核镜像
+function mkinitrdimg ()
+{
+	idir=${INSTALL}/etc/mkinitcpio.d
+	presets=$( ls ${idir} | grep "^kernel.*\.preset$" )
+
+	echo "将mkinitcpio.conf中的ide替换为pata" >>${INSTALL_LOG}
+	if egrep "^HOOKS=.* pata" ${INSTALL}/etc/mkinitcpio.conf &>/dev/null; then
+		rplc=""
+	else
+		rplc=" pata"
+	fi
+	sed -i "s|\(^HOOKS=.*\) ide|\1${rplc}|" ${INSTALL}/etc/mkinitcpio.conf 2>&1 >>${INSTALL_LOG}
+
+	echo "$(date +%D" "%T)	重新以 --bind 方式挂载proc sys dev以使mkinitcpio正常工作:" >>${INSTALL_LOG}
+	mount --bind /proc ${INSTALL}/proc 2>&1 >>${INSTALL_LOG}
+	mount --bind /sys ${INSTALL}/sys 2>&1 >>${INSTALL_LOG}
+	mount --bind /dev ${INSTALL}/dev 2>&1 >>${INSTALL_LOG}
+
+	echo "$(date +%D" "%T)	开始创建目标系统的启动内核镜像: " >>${INSTALL_LOG}
+	cat /proc/mounts | grep ${INSTALL} | sed "s|${INSTALL}|/|" | \
+        sed "s|//|/|" >${INSTALL}/etc/mtab 2>&1 >>${INSTALL_LOG}
+
+	#创建启动内核镜像
+    	chroot ${INSTALL} /sbin/mkinitcpio -p ${presets%.preset} 2>&1 >>${INSTALL_LOG}
+
+	:>${INSTALL}/etc/mtab
+	umount ${INSTALL}/dev
+	umount ${INSTALL}/sys
+	umount ${INSTALL}/proc
+
+	Xdialog --title "启动内核镜像创建完成！" --time-out 10 --no-cancel --no-buttons \
+		--infobox "启动内核镜像创建完成，现在进行下一步。" 5 40
+	echo "$(date +%D" "%T)	启动内核镜像创建完成。" >>${INSTALL_LOG}
+}
+
+#功能函数：初始化menu.lst
+function init_menu_list ()
+{	
+	menulist=${INSTALL}/boot/grub/menu.lst
+	echo "$(date +%D" "%T)	初始化$menulist文件" >>${INSTALL_LOG}
+	if [ -f $menulist ]; then rm -f $menulist; fi
+	echo "######      menu.lst由archlive-installer于$(date +%D" "%T)初始化      ######" > $menulist
+	echo "timeout 300" >> $menulist
+	echo "default 0" >>$menulist
+	echo "" >>$menulist
+
+	kernels=( $( ls ${INSTALL}/boot/vmlinuz* 2>/dev/null ) )
+	if [ ${#kernels[@]} -ne 1 ]; then
+		echo "		警告：在${INSTALL}/boot/下发现两个内核文件。"  >>${INSTALL_LOG}
+		Xdialog --title "警告！" --time-out 20 --no-cancel --no-buttons \
+			--infobox "警告：在${INSTALL}/boot/下发现两个内核文件，\n请选择一个内核作为启动内核。" 5 40
+		kernel=$(Xdialog --stdout --title "请选择一个内核文件(vmlinuz或者vmlinuz26作为启动内核" \
+				--fselect "${INSTALL}/boot/vmlinuz26" 0 0)
+		echo "$(date +%D" "%T)	选择了$kernel作为最终的启动内核。" >>${INSTALL_LOG}
+		boot_kernel=$(basename ${kernel})
+	else
+		boot_kernel=$(basename ${kernels})
+	fi
+
+	presets=$(ls ${INSTALL}/etc/mkinitcpio.d | grep "^kernel.*\.preset$" )
+	source ${INSTALL}/etc/mkinitcpio.d/$presets
+	imgname=$(basename ${default_image})
+	fallbackimgname=$(basename ${fallback_image})
+
+	bootindex=${target_boot#/dev/sd[a-z]}
+	let bootindex-=1
+	if [ "${target_boot}" != "${target_root}" ]; then bootdir=""; else bootdir="/boot"; fi
+
+	echo "title  Arch Linux (Installed by Archlive-installer)" >>$menulist
+	echo "root (hd0,$bootindex)" >>$menulist
+	echo "kernel $bootdir/${boot_kernel} root=/dev/sda${target_root#/dev/sd[a-z]} ro vga=791" >>$menulist
+	echo "initrd $bootdir/$imgname" >>$menulist
+
+	echo "" >>$menulist
+	echo "title  Arch Linux (Safemode, Installed by Archlive-installer)" >>$menulist
+	echo "root (hd0,$bootindex)" >>$menulist
+	echo "kernel $bootdir/${boot_kernel} root=/dev/sda${target_root#/dev/sd[a-z]} ro vga=791" >>$menulist
+	echo "initrd $bootdir/$fallbackimgname" >>$menulist
+	echo "" >>$menulist
+
+	if [ -f /mnt/sd[a-z]1/ntldr ]; then
+		echo " 		---> 发现/dev/sda1下安装有Windows系统(WinXp Win 2003...)" >>${INSTALL_LOG}
+		echo "title MS Windwos OS" >>$menulist
+		echo "rootnoverify (hd0,0)" >>$menulist
+		echo "makeactive" >>$menulist
+		echo "chainloader  +1" >>$menulist
+	fi
+	echo "######      List above was created by Archlive-installer      ######" >>$menulist
+
+	echo "$(date +%D" "%T)	初始化$menulist文件完成，内容如下：" >>${INSTALL_LOG}
+	cat $menulist >>${INSTALL_LOG}
+}
+# 功能函数：安装grub
+function installgrub ()
+{
+	echo "$(date +%D" "%T)	开始安装GRUB到$1:" >>${INSTALL_LOG}
+	mount --bind /proc ${INSTALL}/proc
+	mount --bind /sys ${INSTALL}/sys
+	mount --bind /dev ${INSTALL}/dev
+	cat /proc/mounts | grep ${INSTALL} | sed "s|${INSTALL}|/|" | \
+    		sed "s|//|/|" >${INSTALL}/etc/mtab
+	chroot ${INSTALL} /sbin/grub-install --no-floppy $1 2>&1 >>${INSTALL_LOG}
+	: >${INSTALL}/etc/mtab
+	umount ${INSTALL}/dev
+	umount ${INSTALL}/sys
+	umount ${INSTALL}/proc
+	echo "$(date +%D" "%T)	安装GRUB到$1完成。" >>${INSTALL_LOG}
+	Xdialog --title "GRUB已经成功安装" --time-out 20 --no-cancel --no-buttons \
+		--infobox "GRUB已经成功安装到$1，现在进行下一步。" 5 40
+}
+
+#功能模块： 安装配置bootloader
+function prepare_bootloader ()
+{
+	# 以下步骤非必须，但为了有人自己编辑菜单，就先复制相关文件，避免安装grub出错.
+	if [ ! -d ${INSTALL}/boot/grub ]; then
+		mkdir -p ${INSTALL}/boot/grub
+		cp -af ${INSTALL}/usr/lib/grub/i386-pc/* ${INSTALL}/boot/grub/
+	fi
+	# 初始化menu.lst
+	init_menu_list
+
+	Xdialog --title "是否安装GRUB?" --no-close --yesno "是否安装GRUB?" 0 0	
+	if [ $? -eq 0 ]; then 
+		location=$(Xdialog --stdout --title "安装GRUB的位置" --inputbox "输入安装GRUB的位置\n(如果启动前已经插入U盘，实际硬盘盘符可能是/dev/sdb或者/dev/sdc...请小心输入)：" 0 0 "/dev/sda")
+		installgrub $location
+	fi
+
+	Xdialog --stdout --title "编辑menu.lst?" --no-close \
+		--yesno "编辑GRUB的启动菜单配置文件menu.lst?" 0 0
+	if [ $? -eq 0 ]; then
+		menulist=$(Xdialog --stdout --title "选择预编辑的Menu.lst" --fselect "${INSTALL}/boot/grub/menu.lst" 0 0)
+		Xdialog --title "编辑menu.lst" --fixed-font \
+			--editbox $menulist 0 0 2>$menulist$$
+		if [ $? -eq 0 ]; then 
+			mv -f $menulist$$ $menulist
+			echo "$(date +%D" "%T)	menu.lst编辑完成!结果如下： " >>${INSTALL_LOG}
+			cat $menulist >>${INSTALL_LOG}
+			echo "--------------- $menulist --------------------"  >>${INSTALL_LOG}
+		fi
+	fi	
+}
+function newinstall ()
+{
+	echo "$(date +%D" "%T)----${NEW_INSTALL}----开始----" >>${INSTALL_LOG}
+	no_this_function
+	#finished_installation
+}
+
+function newquickinstall ()
+{
+	echo "$(date +%D" "%T)----${NEW_QUICKINSTALL}----开始----" >>${INSTALL_LOG}
+	prepare_partitions		#分区
+	mount_all_partitions		#挂载分区以选择目标分区，挂载于/mnt下
+	select_target_partitions 	#选择目标安装分区
+	remount_target_partitions	#重新挂载目标安装分区到$INSTALL下
+	prepare_pacmanconf		#准备pacman.conf文件，是否自定义repo，是否自定义mirrorlist
+	prepare_cache			#自定义安装过程中下载的软件包存储位置
+	prepare_softlist			#自定义预安装的软件清单
+	install_per_list			#按照定义的软件清单安装到目标分区
+	update_target_fstab		#更新目标系统的fstab文件
+	prepare_bootloader		#编辑menu.lst，安装grub
+	finished_installation		#完成安装的提示
+}
+
+function copyinstall ()
+{
+	echo "$(date +%D" "%T)----${COPY_INSTALL}----开始----" >>${INSTALL_LOG}
+	prepare_partitions		#分区
+	mount_all_partitions		#挂载分区以选择目标分区，挂载于/mnt下
+	select_target_partitions		#选择目标安装分区
+	remount_target_partitions	#重新挂载目标安装分区到$INSTALL下
+	copyall				#将archlive的各个目录复制到目标系统
+	update_target_fstab		#更新目标系统的fstab文件
+	mkinitrdimg			#创建目标系统的内核镜像文件
+	prepare_bootloader		#编辑menu.lst，安装grub
+	finished_installation		#完成安装的提示
+}
+############################
+# 主程序
+###########################
+function mainmenu ()
+{
+	selection=$(Xdialog --stdout --screen-center --backtitle "Archlive 安装程序 " --title "选择安装方式" \
+                --radiolist "请在如下列表中选择安装方式(安装日志文件保存于${INSTALL_LOG}):" 15 80 0 \
+        	"1" "${NEW_INSTALL}"  off \
+		"2" "${NEW_QUICKINSTALL}"  off \
+		"3" "${COPY_INSTALL}" ON)
+	case $? in
+  	0)
+		#选择安装方式程序正常执行
+		if [ ! -f ${INSTALL_LOG} ]; then touce ${INSTALL_LOG}; fi
+		if [ "x$(grep "重新选择安装方式" ${INSTALL_LOG})" != "x" -a "x$(grep "安装完成" ${INSTALL_LOG})" = "x" ]; then
+			echo "-->$(date +%D" "%T)	选择了安装方式$selection" >>${INSTALL_LOG}
+		else
+			echo "$(date +%D" "%T)	选择了安装方式$selection" >${INSTALL_LOG}
+		fi
+		case $selection in
+			1) newinstall ;;
+			2) newquickinstall ;;
+			3) copyinstall ;;
+		esac
+		;;
+  	1)
+    	       echo "$(date +%D" "%T)	选择了取消退出程序." >>${INSTALL_LOG} ;;
+  	255)
+    	       echo "$(date +%D" "%T)	关闭程序." >>${INSTALL_LOG} ;;
+	esac
+}
+mainmenu

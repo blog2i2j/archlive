@@ -1,0 +1,1 @@
+hzpsf -e GREEK.F16 -z chs16 -c myfont.psf -i carbon_cn.cfg -o isolinux.cfg

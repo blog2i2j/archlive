@@ -1,0 +1,162 @@
+﻿#!/bin/bash
+# 自动编译维护repo的脚本  作者 Carbon Jiao
+# 本脚本给予GPL v3发布，使用者须遵循GPL v3相应规定
+# 本脚本调用的脚本版权归原作者
+#
+# 本脚本主要实现以下功能：
+# 1、将指定的文件或者指定的目录下的文件上传到googlecode指定项目
+# 2、从指定googlecode SVN仓库检出
+# 2、将本地修改的更新回googlecode指定项目的svn仓库
+#
+APPNAME=$(basename "${0}")
+
+# 维护archlive-pkg 维护人员用户信息
+UserName=""
+Passwd=""
+# 此密码非gmail帐号密码，是项目授权密码  在http://code.google.com/hosting/settings页面查看
+
+START=$(pwd)
+
+usage ()
+{
+    echo " 用法:  ${APPNAME} [选项]  命令 <命令选项>"
+    echo " 选项:"
+    echo "    -p Project_Name   预上传到googlecode的项目名, 默认: archlive-pkg"
+    echo "    -u UserName	    Googlecode帐号"
+    echo "    -w Passwd         Googlecode密码"
+    echo "    -f                即使googlecode上已经有的软件包也上传"
+    echo "    -h                本帮助信息."
+    echo " 命令:"
+    echo "     upload <target>  将target或者其下的文件上传到googlecode指定项目"
+    echo "     co <SVNDIR>     从googlecode指定项目检出文件到SVNDIR下"
+    echo "     update    将当前目录下的SVN更新到googlecode SVN仓库"
+    exit $1
+}
+
+error () { echo "错误 $@";}
+warn () { echo "警告 $@";}
+info () { echo "*** $@";}
+
+# 检测、配置输入的命令
+while getopts 'p:u:w:e:F:r:ifh' arg; do
+    case "${arg}" in
+	p) Project_Name="${OPTARG}" ;;
+	u) UserName="${OPTARG}" ;;
+	w) Passwd="${OPTARG}" ;;
+	f) FORCE="y" ;;
+    h|?) usage 0 ;;
+    *) echo "无效参数 '${arg}'"; usage 1 ;;
+    esac
+done
+
+[ "x${Project_Name}" = "x" ] && (Project_Name="archlive-pkg")
+URL="https://${Project_Name}.googlecode.com"
+SVN="$URL/svn/trunk"
+
+echo "参数及命令: $@"
+shift $(($OPTIND - 1))
+echo "命令: $@"
+
+command_name="${1}"
+
+case "${command_name}" in
+    upload) target="${2}" ; remark="上传文件到googlecode软件仓" ;;
+    co) SVNDIR="${2}" ; remark="从googlecode指定项目检出文件到SVNDIR下" ;;
+    update) remark="更新googlecode的SVN仓库" ;;
+    *) warn "未知命令'${command_name}'"; usage 1 ;;
+esac
+
+if [ "${command_name}" = "upload" ]; then 
+	[ "x${target}" = "x" ] && (warn "必须指定上传的目标文件或者目标目录" && usage 1)
+fi
+
+if [ "${command_name}" = "co" ]; then
+	[ "x${SVNDIR}" = "x" ] && (SVNDIR="archlive-pkg")
+fi
+
+# 列出googlecode项目的文件
+list_in_project ()
+{
+    links -no-g -dump http://code.google.com/p/$1/downloads/list | grep "gz" >$2
+    if [ $? -ne 0 ]; then error "无法访问http://code.google.com/p/${Project_Name}/downloads/list，请检查网络连接"; fi
+}
+
+do_upload ()
+{
+    # 上传到googlecode的python脚本
+    if [ ! -f $START/googlecode_upload.py ]; then
+	wget -q http://support.googlecode.com/svn/trunk/scripts/googlecode_upload.py
+	mv googlecode_upload.py $START/
+	chmod +x $START/googlecode_upload.py
+    fi
+    UPLOADPROG="$START/googlecode_upload.py"
+
+    list_in_project ${Project_Name} $START/old.list
+
+    if [ "x$(file ${target} | grep "directory")" != "x" ] ; then
+	echo "现在开始将$target目录下的文件上传到googlecode"
+    	for file in $(ls $target); do
+		exist=""
+		exclude=""
+		info "查看$file是否需要上传"
+
+		size=$(ls -l $file | cut -d " " -f 5)
+		if [ $size -ge 99999999 ]; then 
+			# googlecode最大允许100MB
+			echo "$file 大小为$size，超过googlecode上传上限"
+			exclude="y"
+		fi
+
+		if [ "x$(cat $START/old.list | egrep "^$file")" != "x" ]; then 
+			exist="y"
+			# 如果googlecode上已经存在，如果有 -f 参数，则须要上传，否则不上传
+			if [ "${FORCE}" != "y" ]; then exclude="y"; else exclude="n"; fi
+		fi
+
+		# *.db.tar.gz 是软件仓数据库文件，无论是否存在是否排除，均需要更新
+		if [ "x$(ls -l $file | cut -d " " -f 8 | egrep "db.tar.gz")" != "x" ]; then exclude="n"; fi
+
+		if [ "${exclude}" != "y" ]; then
+			if [ "${exist}" = "y" ]; then
+				warn "$file已经存在于http://${Project_Name}.googlecode.com, 现在重新上传覆盖"
+			else
+				info "正将$PKGDIR/$file上传到 http://${Project_Name}.googlecode.com"
+			fi
+			python ${UPLOADPROG} -s $file -p ${Project_Name} -u ${UserName} -w ${Passwd} -l $file $PKGDIR/$file
+			if [ $? -ne 0 ]; then
+			 	error "上传$file失败，请检查网络或者googlecode，网络不通或者该文件已经上传?" 
+			fi
+		fi
+    	done
+    else
+	exist=""
+	if [ "x$(cat $START/old.list | egrep "^$target")" != "x" ]; then 
+		exist="y"
+		# 如果googlecode上已经存在，如果有 -f 参数，则须要上传，否则不上传
+		if [ "${FORCE}" != "y" ]; then exclude="y"; else exclude="n"; fi
+	fi
+	if [ "x$exist" = "x" -o "$exclude" = n ]; then
+		echo "现在将$target上传到googlecode"
+		python ${UPLOADPROG} -s $target -p ${Project_Name} -u ${UserName} -w ${Passwd} -l $target $target
+	fi
+    fi
+    list_in_project ${Project_Name} $START/new.list
+}
+
+# 从之定的SVN仓库检出
+do_checkout ()
+{
+	echo "从$SVN检出到$SVNDIR下"
+	svn co ${SVN} $SVNDIR --username ${UserName} --password $Passwd
+}
+
+# 提交更新到googlecode软件仓库
+do_update ()
+{
+   svn up
+   svn ci -m "由${UserName}于$(date +%F" "%T)更新" --username ${UserName} --password $Passwd
+}
+
+if [ "${command_name}" = "upload" ]; then do_upload; fi
+if [ "${command_name}" = "co" ]; then do_checkout; fi
+if [ "${command_name}" = "update" ]; then do_update; fi

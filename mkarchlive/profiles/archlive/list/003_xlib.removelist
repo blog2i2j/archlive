@@ -1,0 +1,253 @@
+#bluez
+# Libraries and tools for the Bluetooth protocol stack  1.88MB
+#
+# Java 环境  >=160MB
+ca-certificates-java
+openjdk6
+# Free Java environment based on OpenJDK 6.0 with IcedTea6 replacing binary plugs.  151.25MB
+jre
+# Sun's java runtime environment   110.27MB
+##### 媒体库 #######################
+# gstreamer0.10 liboil gstreamer0.10-base gstreamer0.10-good
+# libraw1394 libavc1394 libiec61883 aalib libtheora speex libshout
+# libdv audiofile esound libidl2 orbit2 libsasl libldap gconf 
+# wavpack taglib libproxy libsoup libv4l libcaca 
+#gstreamer0.10-good-plugins
+#
+#cdparanoia libvisual
+#gstreamer0.10-base-plugins
+#
+# gstreamer0.10-bad xvidcore libdca libusb1 libdc1394 exempi 
+# libsndfile jack-audio-connection-kit libmp4v2-1.6-1  faac  gcc 
+# libexif ppl cloog-ppl musicbrainz faad2 libmms x264 libcdaudio
+# libmpcdec sdl mjpegtools libdvdread libdvdnav libmodplug jasper
+# libxslt raptor ladspa liblrdf
+#gstreamer0.10-bad-plugins
+#
+# gstreamer0.10-ugly libmpeg2 a52dec libsidplay libcddb libcdio
+#gstreamer0.10-ugly-plugins
+#
+#gstreamer0.10-python
+#gstreamer0.10-ffmpeg
+# Gstreamer FFMpeg Plugin  5.85MB
+#
+#####
+gcc
+# 被gstreamer0.10-bad-plugins依赖安装, 此处再删除, 62.97MB
+# live系统，尽量小，删除gcc
+#
+################################################常用X应用程序
+########################网络工具
+# rp-pppoe-gui 及其依赖 11.38MB
+# tcl libxss tk
+#rp-pppoe-gui
+#
+sakura
+pppoe-conf
+#### chestnut-dialer, PPP dialing program
+chestnut-dialer
+#
+#锐捷网络认证
+ruijieclient
+# 需要gnome相关支持
+#gruijieclient
+#
+# libsamplerate
+rdesktop
+# libvncserver
+grdc
+# firefox-archlive 46.15MB
+# mspr nss
+firefox-archlive
+#
+# flashplugin及依赖  17.84MB
+# mozilla-common nspr nss
+flashplugin
+#
+# 无线网络密码破解java图形前端   1.58 + 8.24MB
+spoonwep
+spoonwpa
+# vuze-archlive  Java写的BT下载工具 14.79MB (依赖于ca-certificates-java  openjdk6)
+#vuze-archlive
+##### benliud  2.61MB
+benliud
+#
+transmission-svn
+#transmission-gtk
+#
+##### amule 32.31MB
+#wxgtk gd geoip
+#amule
+##### rapidsvn-cn svn图形工具 1.42MB
+# apr unixodbc apr-util subversion
+#rapidsvn-cn
+#####  xchat 6.61MB
+xchat
+#####  linuxqq 6.08MB
+linuxqq
+#### Skype-staticqt 25.64MB
+# libxss
+skype-staticqt
+#
+gadmin-rsync-cn
+#
+#thunderbird
+#### pidgin-archlive  25.14MB
+pidgin-archlive
+#grsync
+#### pan,  A powerful Newsgroup Article reader based on GTK2   8.15MB
+## hunspell enchant gtkspell   
+#pan
+#
+##### firefox-archlive已经包含ftp工具及下载工具
+#gftp
+#filezilla
+##### UrlGfe is a GTK2 download manager 0.30MB
+#urlgfe
+###################### 媒体工具
+# 影音播放
+# libmowgli   libmcs
+audacious
+audacious-plugins
+ShowLyric
+#
+# vlc 及其依赖 57.44MB  vlc-git 23.68MB
+# libmpeg2 faad2 sdl libmp4v2  faac xvidcore x264 libtheora ffmpeg ladspa fluidsynth zvbi libdvbpsi
+# libdvdread libdvdnav libebml libmatroska  libcddb libmpcdec  libmodplug speex sdl_image libdca taglib 
+# avahi dbus libdaemon 
+vlc-git
+# mplayer-svn 及其依赖  24.40MB
+# cdparanoia libmng aalib libftdi  lirc-utils 
+mplayer-svn
+#
+# gmlive-svn 及其依赖 79.14MB
+# libsigc++2.0 glibmm cairomm pangomm gtkmm libglademm libstdc++5 sopcast
+gmlive-svn
+#
+#gpodder
+#
+# recordmydesktop
+gtk-recordmydesktop
+#   0.82MB
+#
+streamripper
+#   0.15MB
+streamtuner-cn
+#  A stream directory browser  3.09MB
+#
+## avidemux, A graphical tool to edit video (filter/re-encode/split)   27.37MB
+#avidemux
+#
+#gtkpod
+#mixxx
+# portaudio qt
+### mixxx, Digital DJ mixing software   97.28MB
+#
+lash
+### lash, A session management system for JACK and ALSA  0.68MB
+#
+# hydrogen, Drum Machine and Pattern-based Sequencer 及其依赖 104.46MB
+# libxslt raptor liblrdf qt libtar  
+#hydrogen-svn
+#
+#### elisa, An open source cross-platform media center solution  63.92MB
+# zope-interface twisted gstreamer0.10 liboil gstreamer0.10 pigment python-pigment
+# gstreamer0.10-python python-cssutils pyopenssl setuptools
+#elisa
+#
+#
+####arista, Easy to use multimedia transcoder for the GNOME Desktop  35.80MB
+# gstreamer0.10-ffmpeg libvisual gstreamer0.10-base-plugins gstreamer0.10-good libraw1394 
+# libavc1394 libiec61883 libshout libdv wavpack libproxy libsoup libv4l libcaca gstreamer0.10-good-plugins
+# gstreamer0.10-bad libusb1 libdc1394 exempi libexif libmms libcdaudio mjpegtools jasper  
+# gstreamer0.10-bad-plugins gstreamer0.10-ugly a52dec libsidplay libcdio gstreamer0.10-ugly-plugins
+#arista
+###Audacity is a program that lets you manipulate digital audio waveforms  46.04MB
+# postgresql-libs libmysqlclient redland
+#audacity
+##### Asunder is a graphical CD ripper and encoder  0.52MB
+#asunder
+#################### 图形工具
+#gimp
+#mtpaint
+#
+gsnapshot-cn
+#
+# pil
+#comix
+# 依赖于pil 3.04MB
+#
+#rawstudio
+# lcms exiv2 
+## rawstudio, An open source raw-image converter written in GTK+. 
+#
+####blender, A fully integrated 3D graphics creation suite   42.48MB
+## ilmbase openexr
+#blender
+#################### 应用办公
+#abiword
+#gnumeric
+#
+# poppler-glib
+#epdfview
+#
+foxitreader
+# 5.49MB
+leafpad
+geany
+#####  geany  5.96MB
+xarchiver
+#  1.57MB
+#
+#xchm
+# chmlib wxgtk
+# xchm 0.74MB 及其依赖 21.48MB
+#
+#brasero
+## brasero, A disc burning application for Gnome
+#
+#meld
+## meld, Visual diff and merge tool for GNOME
+#
+isomaster
+##### CD image editor written in GTK2  0.96MB
+#homebank
+#################### 系统工具
+larchin-syscalls-svn
+larchin-svn
+gparted
+#
+luser
+# python-pexpect
+# 0.31MB
+#
+hardinfo
+#  0.64MB
+#shaman
+# 依赖于qt,  2.97MB
+#
+#pyrenamer
+# pyorbit libart-lgpl libgnomecanvas tdb smbclient gnome-mime-data gnome-vfs libbonobo libgnome
+# libbonoboui gnome-keyring libgnomeui gnome-python
+##### An application for the mass renaming of files  1.03MB   89.20MB
+#
+unetbootin
+qt
+#依赖于qt gnome-keyring libgtop libgksu gksu  总9.83MB
+##### UNetbootin allows for the installation of various Linux/BSD livecd distributions to a partition or USB drive. 1.38MB
+#
+##### GTK+ Version of snes9x, a portable Emulator for the Super Nintento Entertainment System 3.48MB
+#snes9x-gtk
+#
+##### gcalctool GNOME Scientific calculator  7.78MB
+#gcalctool
+##### lmms The Linux MultiMedia Studio  24.21MB
+#lmms
+##### vym A mindmapping tool  6.46MB
+#vym
+##
+## Back In Time is a simple backup system for Linux inspired from 'flyback project' and 'TimeVault'.
+# backintime 及其依赖 99.94MB
+## python-notify libidl2 orbit2 pyorbit libart-lgpl libgnomecanvas gconf tdb smbclient gnome-mime-data
+# gnome-vfs libbonobo libgnome libbonoboui gnome-keyring libgnomeui gnome-python 
+#backintime

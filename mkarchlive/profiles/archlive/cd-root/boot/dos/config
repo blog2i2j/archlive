@@ -1,0 +1,13 @@
+..\vmlinuz26
+root=/dev/ram0
+rw
+
+initrd=..\carbon.img
+elevator=deadline
+init=linuxrc
+load_ramdisk=1
+prompt_ramdisk=0         # we do not need to be prompted
+ramdisk_size=60%        
+vga=791                  # enable 1024x768 gfx mode by default
+aufs
+nonfree=no
