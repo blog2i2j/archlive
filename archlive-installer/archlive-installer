@@ -668,6 +668,7 @@ function newquickinstall ()
 	mount_all_partitions		#挂载分区以选择目标分区，挂载于/mnt下
 	select_target_partitions 	#选择目标安装分区
 	remount_target_partitions	#重新挂载目标安装分区到$INSTALL下
+	prepare_installer				#准备安装程序
 	prepare_pacmanconf		#准备pacman.conf文件，是否自定义repo，是否自定义mirrorlist
 	prepare_cache			#自定义安装过程中下载的软件包存储位置
 	prepare_softlist			#自定义预安装的软件清单
