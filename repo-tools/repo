@@ -22,6 +22,7 @@ usage ()
     echo "    -p Project_Name   预上传到googlecode的项目名, 默认: archlive-pkg"
     echo "    -u UserName	    Googlecode帐号"
     echo "    -w Passwd         Googlecode密码，访问http://code.google.com/hosting/settings获取"
+    echo "    -m MESSAGE      提交到googlecode仓库的说明信息"
     echo "    -f                即使googlecode上已经有的软件包也上传"
     echo "    -h                本帮助信息."
     echo " 命令:"
@@ -38,18 +39,19 @@ warn () { echo "警告 $@";}
 info () { echo "*** $@";}
 
 # 检测、配置输入的命令
-while getopts 'p:u:w:e:F:r:ifh' arg; do
+while getopts 'p:u:w:m:e:F:r:ifh' arg; do
     case "${arg}" in
 	p) Project_Name="${OPTARG}" ;;
 	u) UserName="${OPTARG}" ;;
 	w) Passwd="${OPTARG}" ;;
+	m) MESSAGE="${OPTARG}" ;;
 	f) FORCE="y" ;;
     h|?) usage 0 ;;
     *) echo "无效参数 '${arg}'"; usage 1 ;;
     esac
 done
 
-[ "x$Project_Name" = "x" ] && (warn "必须指定googlecode项目名, $APPNAME -p 项目名 命令" && usage 1)
+[ "x$Project_Name" = "x" ] && (warn "必须指定googlecode项目名, $APPNAME -m "更新说明" -p 项目名 命令" && usage 1)
 URL="https://${Project_Name}.googlecode.com"
 SVN="$URL/svn/trunk"
 
@@ -97,6 +99,9 @@ fi
 if [ "${command_name}" = "co" ]; then
 	[ "x${SVNDIR}" = "x" ] && (SVNDIR="archlive-pkg")
 fi
+
+[ "${command_name}" = "upload" -o "${command_name}" = "push" ] && [ "x$MESSAGE" = "x" ] && \
+	(warn "必须说明更新描述，以方便大家查看修改内容, $APPNAME -m "更新说明" -p 项目名 命令" && usage 1)
 
 # 列出googlecode项目的文件
 list_in_project ()
@@ -196,14 +201,14 @@ do_update ()
 {
 	checkuser
 	svn up
-	svn ci -m "由${UserName}于$(date +%F" "%T)更新" --username ${UserName} --password $Passwd
+	svn ci -m "由${UserName}于$(date +%F" "%T)更新: $MESSAGE" --username ${UserName} --password $Passwd
 }
 # 将本地hg仓库的修改提交到googlecode hg仓
 do_push ()
 {
 	checkuser
 	#hg addremove
-	hg ci -u ${UserName} -m "由${UserName}于$(date +%F" "%T)更新"
+	hg ci -u ${UserName} -m "由${UserName}于$(date +%F" "%T)更新: $MESSAGE"
 	hg push https://${UserName%@gmail.com}%40gmail.com:$Passwd@${Project_Name}.googlecode.com/hg
 }
 

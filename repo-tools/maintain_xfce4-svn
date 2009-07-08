@@ -69,6 +69,7 @@ usage ()
     echo "    -p Project_Name   预上传到googlecode的项目名, 默认: archlive-pkg"
     echo "    -u UserName	    Googlecode帐号"
     echo "    -w Passwd         Googlecode密码，访问http://code.google.com/hosting/settings获取"
+    echo "    -m message      提交到googlecode仓库的说明信息"
     echo "    -e EXCLUDELIST    不上传的文件清单"
     echo "    -F Full_Repo_Name 全局软件仓名"
     echo "    -r This_Repo_Name 该小软件仓名"
@@ -89,11 +90,12 @@ warn () { echo "警告 $@";}
 info () { echo "*** $@";}
 
 # 检测、配置输入的命令
-while getopts 'p:u:w:e:F:r:ifh' arg; do
+while getopts 'p:u:w:m:e:F:r:ifh' arg; do
     case "${arg}" in
 	p) Project_Name="${OPTARG}" ;;
 	u) UserName="${OPTARG}" ;;
 	w) Passwd="${OPTARG}" ;;
+	m) MESSAGE="${OPTARG}" ;;
 	e) EXCLUDELIST="${OPTARG}" ;;
 	F) Full_Repo_Name="${OPTARG}" ;;
 	r) This_Repo_Name="${OPTARG}" ;;
@@ -128,6 +130,9 @@ echo " 预上传用户的密码: ${Passwd}"
 echo " 编译后是否安装: ${INSTALL}"
 echo " 是否覆盖: ${FORCE}"
 sleep 1
+
+[ "${command_name}" = "update" ] && [ "x$MESSAGE" = "x" ] && \
+	 (warn "必须说明更新描述，以方便大家查看修改内容, $APPNAME -m "更新说明" 命令" && usage 1)
 
 # 维护googlecode人员用户信息
 checkuser ()
@@ -308,10 +313,10 @@ do_update ()
    checkuser
    cd ${SVNDIR} 
    #SVN方式
-   #svn ci -m "由${UserName}于$(date +%F" "%T)更新" --username ${UserName} --password $Passwd
+   #svn ci -m "由${UserName}于$(date +%F" "%T)更新: $MESSAGE" --username ${UserName} --password $Passwd
    #HG方式
    #hg addremove
-   hg ci -u ${UserName} -m "由${UserName}于$(date +%F" "%T)更新"
+   hg ci -u ${UserName} -m "由${UserName}于$(date +%F" "%T)更新: $MESSAGE"
    hg push https://${UserName%@gmail.com}%40gmail.com:$Passwd@${Project_Name}.googlecode.com/hg/${This_Repo_Name}
 }
 
