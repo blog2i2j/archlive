@@ -12,7 +12,7 @@
 #
 APPNAME=$(basename "${0}")
 
-Project_Name="archlive-pkg"
+Project_Name=""
 START=$(pwd)
 
 usage ()
@@ -48,9 +48,6 @@ while getopts 'p:u:w:e:F:r:ifh' arg; do
     *) echo "无效参数 '${arg}'"; usage 1 ;;
     esac
 done
-
-URL="https://${Project_Name}.googlecode.com"
-SVN="$URL/svn/trunk"
 
 # 维护googlecode人员用户信息
 checkuser ()
@@ -88,6 +85,10 @@ case "${command_name}" in
     push) remark="将本地的修改更新到googlecode的HG仓库" ;;
     *) warn "未知命令'${command_name}'"; usage 1 ;;
 esac
+
+[ "x$Project_Name" = "x" ] && (warn "必须指定googlecode项目名" && usage 1)
+URL="https://${Project_Name}.googlecode.com"
+SVN="$URL/svn/trunk"
 
 if [ "${command_name}" = "upload" ]; then 
 	[ "x${target}" = "x" ] && (warn "必须指定上传的目标文件或者目标目录" && usage 1)
@@ -201,7 +202,7 @@ do_update ()
 do_push ()
 {
 	checkuser
-	hg addremove
+	#hg addremove
 	hg ci -u ${UserName} -m "由${UserName}于$(date +%F" "%T)更新"
 	hg push https://${UserName#@gmail.com}%%40gmail.com:$Passwd@${Project_Name}.googlecode.com/hg
 }
