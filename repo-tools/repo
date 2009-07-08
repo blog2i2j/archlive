@@ -100,7 +100,7 @@ if [ "${command_name}" = "co" ]; then
 	[ "x${SVNDIR}" = "x" ] && (SVNDIR="archlive-pkg")
 fi
 
-[ "${command_name}" = "upload" -o "${command_name}" = "push" ] && [ "x$MESSAGE" = "x" ] && \
+[ "${command_name}" = "update" -o "${command_name}" = "push" ] && [ "x$MESSAGE" = "x" ] && \
 	(warn "必须说明更新描述，以方便大家查看修改内容, $APPNAME -m "更新说明" -p 项目名 命令" && usage 1)
 
 # 列出googlecode项目的文件
