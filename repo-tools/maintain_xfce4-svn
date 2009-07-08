@@ -137,7 +137,7 @@ checkuser ()
 			. ~/.googlecode
 		else
 			warn "无googlecode用户信息"
-			warn "请 -u 用户名 -p 密码 来指定."
+			warn "请 -u 用户名 -w 密码 来指定."
 			usage 1
 		fi
 	else

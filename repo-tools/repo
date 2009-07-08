@@ -29,7 +29,7 @@ usage ()
     echo "     co <SVNDIR>     从googlecode指定项目检出文件到SVNDIR下"
     echo "     update    将当前目录下的SVN更新到googlecode SVN仓库"
     echo "     clone <HGDIR>     从googlecode指定项目检出文件到HGDIR下"
-    echo "     pull    将当前目录下的hg仓库修改更新到googlecode hg仓库"
+    echo "     push    将当前目录下的hg仓库修改更新到googlecode hg仓库"
     exit $1
 }
 
@@ -49,6 +49,10 @@ while getopts 'p:u:w:e:F:r:ifh' arg; do
     esac
 done
 
+[ "x$Project_Name" = "x" ] && (warn "必须指定googlecode项目名, $APPNAME -p 项目名 命令" && usage 1)
+URL="https://${Project_Name}.googlecode.com"
+SVN="$URL/svn/trunk"
+
 # 维护googlecode人员用户信息
 checkuser ()
 { 
@@ -57,7 +61,7 @@ checkuser ()
 			. ~/.googlecode
 		else
 			warn "无googlecode用户信息"
-			warn "请 -u 用户名 -p 密码 来指定."
+			warn "请 -u 用户名 -w 密码 来指定."
 			usage 1
 		fi
 	else
@@ -85,10 +89,6 @@ case "${command_name}" in
     push) remark="将本地的修改更新到googlecode的HG仓库" ;;
     *) warn "未知命令'${command_name}'"; usage 1 ;;
 esac
-
-[ "x$Project_Name" = "x" ] && (warn "必须指定googlecode项目名" && usage 1)
-URL="https://${Project_Name}.googlecode.com"
-SVN="$URL/svn/trunk"
 
 if [ "${command_name}" = "upload" ]; then 
 	[ "x${target}" = "x" ] && (warn "必须指定上传的目标文件或者目标目录" && usage 1)
