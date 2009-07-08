@@ -12,6 +12,7 @@
 # 特别说明：维护对应软件仓里面的软件的依赖关系必须放在对应软件仓目录下的depends文件中
 # 下个版本将对普通软件包自动检测依赖关系
 #
+#----2009-07-08 由于archlive-pkg改用hg管理，获取上传PKGBUILD的方式对应改动, 同时用户信息保存在~/.googlecode下，以免重复输入.
 #----2009-06-17 判断一个程序是否已经安装
 #----2009-06-17 在olympic的帮助下debug sed -i 's/^M//g' maintain   ^M由Ctrl-v +M 输入， 多余的回车符——用notepad编辑过)
 #----2009-06-16 第一版 
@@ -67,7 +68,7 @@ usage ()
     echo " 选项:"
     echo "    -p Project_Name   预上传到googlecode的项目名, 默认: archlive-pkg"
     echo "    -u UserName	    Googlecode帐号"
-    echo "    -w Passwd         Googlecode密码"
+    echo "    -w Passwd         Googlecode密码，访问http://code.google.com/hosting/settings获取"
     echo "    -e EXCLUDELIST    不上传的文件清单"
     echo "    -F Full_Repo_Name 全局软件仓名"
     echo "    -r This_Repo_Name 该小软件仓名"
@@ -79,7 +80,7 @@ usage ()
     echo "     compile   将<SVNDIR>下的所有软件包编译并将编译好的包放到<PKGDIR>,同时更新<SVNDIR>里面的PKGBUILD"
     echo "     repo      将本地<PKGDIR>下的软件包加入到软件仓数据库"
     echo "     upload    将本地<PKGDIR>下的软件包上传到googlecode指定项目"
-    echo "     update    将本地<SVNDIR>下的软件编译配置文件更新\提交到googlecode SVN仓库"
+    echo "     update    将本地<SVNDIR>下的软件编译配置文件更新\提交到googlecode SVN/HG仓库"
     exit $1
 }
 
@@ -102,6 +103,7 @@ while getopts 'p:u:w:e:F:r:ifh' arg; do
     *) echo "无效参数 '${arg}'"; usage 1 ;;
     esac
 done
+
 
 echo "参数及命令: $@"
 shift $(($OPTIND - 1))
@@ -127,10 +129,37 @@ echo " 编译后是否安装: ${INSTALL}"
 echo " 是否覆盖: ${FORCE}"
 sleep 1
 
+# 维护googlecode人员用户信息
+checkuser ()
+{ 
+	if [ "x$UserName" = "x" -o "x$Passwd" = "x" ]; then 
+		if [ -f ~/.googlecode ]; then
+			. ~/.googlecode
+		else
+			warn "无googlecode用户信息"
+			warn "请 -u 用户名 -p 密码 来指定."
+			usage 1
+		fi
+	else
+		if [ -f ~/.googlecode ]; then
+			sed -i "s/UserName=.*/UserName=\"$UserName\"/g" ~/.googlecode
+			sed -i "s/Passwd=.*/Passwd=\"$Passwd\"/g" ~/.googlecode
+		else
+			echo "UserName=$UserName" >~/.googlecode
+			echo "Passwd=$Passwd" >>~/.googlecode
+		fi		
+	fi
+}
+
 do_checkout ()
 {
-	echo "从$URL下载${This_Repo_Name}的编译配置文件"
-	svn co ${SVN_URL}/${This_Repo_Name} $SVNDIR
+	# SVN方式
+	#echo "从$URL下载${This_Repo_Name}的编译配置文件"
+	#svn co ${SVN_URL}/${This_Repo_Name} $SVNDIR
+	#cp -rf $SVNDIR ${SVNDIR}-build
+	# hg 方式
+	echo "从$URL/hg/${This_Repo_Name}获取${This_Repo_Name}的编译配置文件"
+	hg clone $URL/hg/${This_Repo_Name} $SVNDIR
 	cp -rf $SVNDIR ${SVNDIR}-build
 }
 
@@ -222,6 +251,7 @@ list_in_project ()
 
 do_upload ()
 {
+    checkuser
     # 上传到googlecode的python脚本
     if [ ! -f $START/googlecode_upload.py ]; then
 	wget -q http://support.googlecode.com/svn/trunk/scripts/googlecode_upload.py
@@ -275,8 +305,14 @@ do_upload ()
 # 提交更新到googlecode软件仓库
 do_update ()
 {
+   checkuser
    cd ${SVNDIR} 
-   svn ci -m "由${UserName}于$(date +%F" "%T)更新" --username ${UserName} --password $Passwd
+   #SVN方式
+   #svn ci -m "由${UserName}于$(date +%F" "%T)更新" --username ${UserName} --password $Passwd
+   #HG方式
+   hg addremove
+   hg ci -u ${UserName} -m "由${UserName}于$(date +%F" "%T)更新"
+   hg push https://${UserName#@gmail.com}%40gmail.com:$Passwd@${Project_Name}.googlecode.com/hg/${This_Repo_Name}
 }
 
 if [ "${command_name}" = "co" ]; then do_checkout; fi

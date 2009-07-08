@@ -1,0 +1,225 @@
+﻿#!/bin/bash
+# 该脚本从http协议的Arch软件仓下载repo，并上传到googlecode指定项目  作者 Carbon Jiao
+# 本脚本给予GPL v3发布，使用者须遵循GPL v3相应规定
+# 本脚本调用的脚本版权归原作者
+# 
+# 该脚本主要实现：
+# 1、从指定的软件仓同步到本地repo；
+# 2、将本地的软件仓批量上传到googlecode的制定项目空间；
+#    调用googlecode官方的一个python上传脚本
+#    在使用upload或者all命令的时候，会在该命令目录下产生两个文件
+#	old.list   上传前googlecode上对应项目的文件清单
+#	new.list  上传后googlecode上对应项目的文件清单
+#    脚本会自动检测预上传的文件夹下的软件是否已经存在于googlecode项目上
+# 3、将软件仓的相关设置加到指定的 pacman.conf 
+#    (一般用户/etc/pacman.conf， 制作archlive的就还有另外的软件仓配置文件了）
+#    脚本会自动检测软件仓配置文件中是否已经存在预添加的软件仓
+#
+
+APPNAME=$(basename "${0}")
+
+# 默认预修改的软件仓配置文件,用-c 可以指定另外的配置文件
+# 预添加的软件仓第一优先: 
+# 在"# uncommented to enable the repo."行后开始定义软件仓.
+# 原始/etc/pacman.conf行有以上的标的行
+PACMANCONF="/etc/pacman.conf"
+
+# 在指定文件下的文件中不上传的文件清单，须全名
+#if [ -f $(pwd)/exclude.list ]; then
+#	EXCLUDELIST="$(pwd)/exclude.list"
+#else
+#	EXCLUDELIST=""
+#fi
+# 软件仓数据库文件制作脚本，属于pacman
+if [ -f "$(pwd)/repo-add" ]; then 
+   REPO_ADD="$(pwd)/repo-add"
+else
+   REPO_ADD="/usr/bin/repo-add"
+fi
+
+# 如果googlecode上已经存在预提交的文件，则不覆盖
+FORCE="n"
+# 即使googlecode上已经存在预提交的文件也提交
+#FORCE="y"
+
+usage ()
+{
+    echo " 用法:  ${APPNAME} [选项]  命令 <命令选项>"
+    echo " 选项:"
+    echo "    -u UserName	Googlecode帐号"
+    echo "    -w Passwd      Googlecode密码，访问http://code.google.com/hosting/settings获取密码"
+    echo "    -f               即使googlecode上已经有的文件也上传"
+    echo "    -h               本帮助信息."
+    echo " 命令:"
+    echo "     download <ARCH> <REPO> <COPYDIR>	将KDEMOD里面的i686或者x86_64对应软件仓下载到<COPYDIR>目录下"
+    echo "     upload <COPYDIR> <googlecode项目名>   将<REPO_DIR>下的文件提交到<Project_Name>项目"
+    echo "     sync <ARCH> <REPO> <COPYDIR> <googlecode项目名> 将KDEMOD的i686或者x86_64的软件仓本地的<COPYDIR>和googlecode上的项目同步"
+    echo " ARCH可以是 i686 或者 x86_64; REPO可以是core, testing, extra, unstable,legacy"
+    exit $1
+}
+
+error () { echo "XXX $@";}
+warn () { echo "!!! $@";}
+info () { echo "*** $@";}
+
+# 检测、配置输入的命令
+while getopts 'u:w:c:e:fh' arg; do
+    case "${arg}" in
+	u) UserName="${OPTARG}" ;;
+	w) Passwd="${OPTARG}" ;;
+	f) FORCE="y" ;;
+    h|?) usage 0 ;;
+    *) echo "无效参数 '${arg}'"; usage 1 ;;
+    esac
+done
+
+echo "参数及命令: $@"
+shift $(($OPTIND - 1))
+echo "命令: $@"
+#[ $# -le 1 ] && usage 1
+
+command_name="${1}"
+
+case "${command_name}" in
+    download) ARCH="${2}"; REPO="${3}"; COPYDIR="${4}";
+		remark="将KDEMOD $ARCH的$REPO下载到$COPYDIR" 
+		;;
+    upload) COPYDIR="${2}"; Project_Name="${3}"; 
+		remark="将本地$COPYDIR提交到Googlecode项目${Project_Name}" 
+		;;
+    sync) REPO="${2}"; COPYDIR="${3}"; Project_Name="${4}";
+		remark="将KDEMOD的$REPO通过$COPYDIR再同步到Googlecode项目${Project_Name}"
+		;;
+    *) warn "未知命令'${command_name}'"; usage 1 ;;
+esac
+
+[ "$ARCH" != "i686" -a "$ARCH" != "x86_64" ] && (echo "无效的ARCH名，只能是i686 或者x86_64"; usage 1)
+
+case "$REPO" in
+	core) REPODIR="core" ;;
+	testing) REPODIR="testing" ;;
+	extra) REPODIR="extragear" ;;
+	unstable) REPODIR="unstable" ;;
+	legacy) REPODIR="legacy" ;;
+	*) echo "无效REPO名，KDEMod只提供core testing extra unstable legacy这几个repo"; usage 1 ;;
+esac
+
+if [ "x${COPYDIR}" = "x" ]; then COPYDIR="${REPODIR}-${ARCH}"; fi
+[ "x${COPYDIR}" = "x" ] && (warn "必须指定预上传的文件夹"; usage 1)
+[ "${command_name}" = "upload" -o "${command_name}" = "sync" ] && [ "x${Project_Name}" = "x" ] &&  (warn "必须指定上传的目的googlecode项目名，请确保存在." && usage 1)
+
+info " ${APPNAME}程序设置:"
+echo " 命令: ${command_name} —— ${remark} $COPYDIR"
+sleep 1
+
+do_download ()
+{
+	rsync -av chakra-project.org::kdemod/$REPODIR/$ARCH/ $COPYDIR
+}
+
+# 维护googlecode人员用户信息
+checkuser ()
+{ 
+	if [ "x$UserName" = "x" -o "x$Passwd" = "x" ]; then 
+		if [ -f ~/.googlecode ]; then
+			. ~/.googlecode
+		else
+			warn "无googlecode用户信息"
+			info "请使用-u 用户名 -p 密码来指定"
+			usage 1
+		fi
+	else
+		if [ -f ~/.googlecode ]; then
+			sed -i "s/UserName=.*/UserName=\"$UserName\"/g" ~/.googlecode
+			sed -i "s/Passwd=.*/Passwd=\"$Passwd\"/g" ~/.googlecode
+		else
+			echo "UserName=$UserName" >~/.googlecode
+			echo "Passwd=$Passwd" >>~/.googlecode
+		fi		
+	fi
+}
+
+# 列出googlecode项目的文件
+list_in_project ()
+{
+    links -no-g -dump http://code.google.com/p/$1/downloads/list | grep "gz" >$2
+    if [ $? -ne 0 ]; then error "无法访问http://code.google.com/p/${Project_Name}/downloads/list，请检查网络连接"; fi
+}
+
+do_upload ()
+{
+    checkuser
+    # 上传到googlecode的python脚本
+    START=$(pwd)
+    if [ ! -f $START/googlecode_upload.py ]; then
+	wget -q http://support.googlecode.com/svn/trunk/scripts/googlecode_upload.py
+	mv googlecode_upload.py $START/
+	chmod +x $START/googlecode_upload.py
+    fi
+    UPLOADPROG="$START/googlecode_upload.py"
+
+    list_in_project ${Project_Name} $START/old.list
+
+    for target in $(ls $COPYDIR); do
+        if [ "x$(file ${target} | grep "directory")" != "x" ] ; then
+		echo "现在开始将$target目录下的文件上传到googlecode"
+    		for file in $(ls $target); do
+			exist=""
+			exclude=""
+			info "查看$file是否需要上传"
+
+			size=$(ls -l $target/$file | cut -d " " -f 5)
+			if [ $size -ge 99999999 ]; then 
+				# googlecode最大允许100MB
+				echo "$file 大小为$size，超过googlecode上传上限"
+				exclude="y"
+			fi
+
+			if [ "x$(cat $START/old.list | egrep "^$file")" != "x" ]; then 
+				exist="y"
+				# 如果googlecode上已经存在，如果有 -f 参数，则须要上传，否则不上传
+				if [ "${FORCE}" != "y" ]; then exclude="y"; else exclude="n"; fi
+			fi
+
+			# *.db.tar.gz 是软件仓数据库文件，无论是否存在是否排除，均需要更新
+			if [ "x$(ls -l $target/$file | cut -d " " -f 8 | egrep "db.tar.gz")" != "x" ]; then exclude="n"; fi
+
+			if [ "${exclude}" != "y" ]; then
+				if [ "${exist}" = "y" ]; then
+					warn "$file已经存在于http://${Project_Name}.googlecode.com, 现在重新上传覆盖"
+				else
+					info "正将$target/$file上传到 http://${Project_Name}.googlecode.com"
+				fi
+				python ${UPLOADPROG} -s $file -p ${Project_Name} -u ${UserName} -w ${Passwd} -l $file $target/$file
+				if [ $? -ne 0 ]; then
+			 		error "上传$file失败，请检查网络或者googlecode，网络不通或者该文件已经上传?" 
+				fi
+			fi
+    		done
+    	else
+		exist=""
+		exclude=""
+		size=$(ls -l $target | cut -d " " -f 5)
+		if [ $size -ge 99999999 ]; then 
+			# googlecode最大允许100MB
+			echo "$target大小为$size，超过googlecode上传上限"
+			exclude="y"
+		fi
+		if [ "x$(cat $START/old.list | egrep "^$target")" != "x" ]; then 
+			exist="y"
+			# 如果googlecode上已经存在，如果有 -f 参数，则须要上传，否则不上传
+			if [ "${FORCE}" != "y" ]; then exclude="y"; else exclude="n"; fi
+		fi
+		if [ "x$exist" = "x" -o "$exclude" = n ]; then
+			echo "现在将$target上传到googlecode"
+			python ${UPLOADPROG} -s $target -p ${Project_Name} -u ${UserName} -w ${Passwd} -l $target $target
+		fi
+   	 fi
+    done
+
+    list_in_project ${Project_Name} $START/new.list
+    rm -f $START/{old.list,new.list}
+}
+
+[ "${command_name}" = "download" -o "${command_name}" = "sync" ] && (do_download)
+[ "${command_name}" = "sync" ] && (do_upload)

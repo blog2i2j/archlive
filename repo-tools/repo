@@ -5,16 +5,14 @@
 #
 # 本脚本主要实现以下功能：
 # 1、将指定的文件或者指定的目录下的文件上传到googlecode指定项目
-# 2、从指定googlecode SVN仓库检出
-# 2、将本地修改的更新回googlecode指定项目的svn仓库
+# 2、从指定googlecode SVN或者hg仓库检出
+# 2、将本地修改的更新回googlecode指定项目的svn或者hg仓库
+#
+#----2009-07-04更新： 将googlecode用户信息存放到~/.googlecode下
 #
 APPNAME=$(basename "${0}")
 
-# 维护archlive-pkg 维护人员用户信息
-UserName=""
-Passwd=""
-# 此密码非gmail帐号密码，是项目授权密码  在http://code.google.com/hosting/settings页面查看
-
+Project_Name="archlive-pkg"
 START=$(pwd)
 
 usage ()
@@ -23,13 +21,15 @@ usage ()
     echo " 选项:"
     echo "    -p Project_Name   预上传到googlecode的项目名, 默认: archlive-pkg"
     echo "    -u UserName	    Googlecode帐号"
-    echo "    -w Passwd         Googlecode密码"
+    echo "    -w Passwd         Googlecode密码，访问http://code.google.com/hosting/settings获取"
     echo "    -f                即使googlecode上已经有的软件包也上传"
     echo "    -h                本帮助信息."
     echo " 命令:"
     echo "     upload <target>  将target或者其下的文件上传到googlecode指定项目"
     echo "     co <SVNDIR>     从googlecode指定项目检出文件到SVNDIR下"
     echo "     update    将当前目录下的SVN更新到googlecode SVN仓库"
+    echo "     clone <HGDIR>     从googlecode指定项目检出文件到HGDIR下"
+    echo "     pull    将当前目录下的hg仓库修改更新到googlecode hg仓库"
     exit $1
 }
 
@@ -49,9 +49,30 @@ while getopts 'p:u:w:e:F:r:ifh' arg; do
     esac
 done
 
-[ "x${Project_Name}" = "x" ] && (Project_Name="archlive-pkg")
 URL="https://${Project_Name}.googlecode.com"
 SVN="$URL/svn/trunk"
+
+# 维护googlecode人员用户信息
+checkuser ()
+{ 
+	if [ "x$UserName" = "x" -o "x$Passwd" = "x" ]; then 
+		if [ -f ~/.googlecode ]; then
+			. ~/.googlecode
+		else
+			warn "无googlecode用户信息"
+			warn "请 -u 用户名 -p 密码 来指定."
+			usage 1
+		fi
+	else
+		if [ -f ~/.googlecode ]; then
+			sed -i "s/UserName=.*/UserName=\"$UserName\"/g" ~/.googlecode
+			sed -i "s/Passwd=.*/Passwd=\"$Passwd\"/g" ~/.googlecode
+		else
+			echo "UserName=$UserName" >~/.googlecode
+			echo "Passwd=$Passwd" >>~/.googlecode
+		fi		
+	fi
+}
 
 echo "参数及命令: $@"
 shift $(($OPTIND - 1))
@@ -62,7 +83,9 @@ command_name="${1}"
 case "${command_name}" in
     upload) target="${2}" ; remark="上传文件到googlecode软件仓" ;;
     co) SVNDIR="${2}" ; remark="从googlecode指定项目检出文件到SVNDIR下" ;;
-    update) remark="更新googlecode的SVN仓库" ;;
+    update) remark="将本地的修改更新到googlecode的SVN仓库" ;;
+    clone) SVNDIR="${2}" ; remark="从googlecode指定项目的hg仓库检出文件到SVNDIR下" ;;
+    push) remark="将本地的修改更新到googlecode的HG仓库" ;;
     *) warn "未知命令'${command_name}'"; usage 1 ;;
 esac
 
@@ -83,6 +106,7 @@ list_in_project ()
 
 do_upload ()
 {
+    checkuser
     # 上传到googlecode的python脚本
     if [ ! -f $START/googlecode_upload.py ]; then
 	wget -q http://support.googlecode.com/svn/trunk/scripts/googlecode_upload.py
@@ -100,7 +124,7 @@ do_upload ()
 		exclude=""
 		info "查看$file是否需要上传"
 
-		size=$(ls -l $file | cut -d " " -f 5)
+		size=$(ls -l $target/$file | cut -d " " -f 5)
 		if [ $size -ge 99999999 ]; then 
 			# googlecode最大允许100MB
 			echo "$file 大小为$size，超过googlecode上传上限"
@@ -114,15 +138,15 @@ do_upload ()
 		fi
 
 		# *.db.tar.gz 是软件仓数据库文件，无论是否存在是否排除，均需要更新
-		if [ "x$(ls -l $file | cut -d " " -f 8 | egrep "db.tar.gz")" != "x" ]; then exclude="n"; fi
+		if [ "x$(ls -l $target/$file | cut -d " " -f 8 | egrep "db.tar.gz")" != "x" ]; then exclude="n"; fi
 
 		if [ "${exclude}" != "y" ]; then
 			if [ "${exist}" = "y" ]; then
 				warn "$file已经存在于http://${Project_Name}.googlecode.com, 现在重新上传覆盖"
 			else
-				info "正将$PKGDIR/$file上传到 http://${Project_Name}.googlecode.com"
+				info "正将$target/$file上传到 http://${Project_Name}.googlecode.com"
 			fi
-			python ${UPLOADPROG} -s $file -p ${Project_Name} -u ${UserName} -w ${Passwd} -l $file $PKGDIR/$file
+			python ${UPLOADPROG} -s $file -p ${Project_Name} -u ${UserName} -w ${Passwd} -l $file $target/$file
 			if [ $? -ne 0 ]; then
 			 	error "上传$file失败，请检查网络或者googlecode，网络不通或者该文件已经上传?" 
 			fi
@@ -130,6 +154,13 @@ do_upload ()
     	done
     else
 	exist=""
+	exclude=""
+	size=$(ls -l $target | cut -d " " -f 5)
+	if [ $size -ge 99999999 ]; then 
+		# googlecode最大允许100MB
+		echo "$target大小为$size，超过googlecode上传上限"
+		exclude="y"
+	fi
 	if [ "x$(cat $START/old.list | egrep "^$target")" != "x" ]; then 
 		exist="y"
 		# 如果googlecode上已经存在，如果有 -f 参数，则须要上传，否则不上传
@@ -141,22 +172,42 @@ do_upload ()
 	fi
     fi
     list_in_project ${Project_Name} $START/new.list
+    rm -f $START/{old.list,new.list}
 }
 
-# 从之定的SVN仓库检出
+# 从指定的SVN仓库检出
 do_checkout ()
 {
+	checkuser
 	echo "从$SVN检出到$SVNDIR下"
 	svn co ${SVN} $SVNDIR --username ${UserName} --password $Passwd
 }
+#从指定的HG仓库检出
+do_clone ()
+{
+	echo "从$HG检出到$HGDIR下"
+	hg clone $HG $HGDIR
+	cd $HGDIR
+}
 
-# 提交更新到googlecode软件仓库
+# 提交更新到googlecode的SVN仓
 do_update ()
 {
-   svn up
-   svn ci -m "由${UserName}于$(date +%F" "%T)更新" --username ${UserName} --password $Passwd
+	checkuser
+	svn up
+	svn ci -m "由${UserName}于$(date +%F" "%T)更新" --username ${UserName} --password $Passwd
+}
+# 将本地hg仓库的修改提交到googlecode hg仓
+do_push ()
+{
+	checkuser
+	hg addremove
+	hg ci -u ${UserName} -m "由${UserName}于$(date +%F" "%T)更新"
+	hg push https://${UserName#@gmail.com}%40gmail.com:$Passwd@${Project_Name}.googlecode.com/hg
 }
 
 if [ "${command_name}" = "upload" ]; then do_upload; fi
 if [ "${command_name}" = "co" ]; then do_checkout; fi
 if [ "${command_name}" = "update" ]; then do_update; fi
+if [ "${command_name}" = "clone" ]; then do_clone; fi
+if [ "${command_name}" = "push" ]; then do_push; fi
