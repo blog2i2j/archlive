@@ -204,7 +204,7 @@ do_push ()
 	checkuser
 	#hg addremove
 	hg ci -u ${UserName} -m "由${UserName}于$(date +%F" "%T)更新"
-	hg push https://${UserName%@gmail.com}%%40gmail.com:$Passwd@${Project_Name}.googlecode.com/hg
+	hg push https://${UserName%@gmail.com}%40gmail.com:$Passwd@${Project_Name}.googlecode.com/hg
 }
 
 if [ "${command_name}" = "upload" ]; then do_upload; fi
