@@ -376,8 +376,9 @@ function copydir ()
 # 功能函数，挂载分区到指定目录
 function mount_target_partition ()
 {
-	umount -l /dev/$(basename $1)
-	mount /dev/$(basename $1) $INSTALL/${2}
+	#umount -l /dev/$(basename $1)
+	#mount /dev/$(basename $1) $INSTALL/${2}
+	mount --move $1 $INSTALL/${2}
 	echo "$(date +%D" "%T)	挂载目标${targetpartition#target_}分区$1到$INSTALL/${2}" >>${INSTALL_LOG}
 }
 # 功能模块： 重新挂载目标分区
