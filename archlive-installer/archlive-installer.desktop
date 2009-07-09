@@ -1,0 +1,12 @@
+[Desktop Entry]
+Categories=Application;System
+Encoding=UTF-8
+Exec=sudo /opt/archlive-installer/bin/archlive-installer
+Icon=archlive.svg
+StartupNotify=true
+Terminal=false
+Type=Application
+Name=Install Arch Linux
+Name[zh_CN]=安装Arch Linux
+Comment=Archlive Installer
+Comment[zh_CN]=Archlive安装程序
