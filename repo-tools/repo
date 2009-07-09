@@ -8,6 +8,8 @@
 # 2、从指定googlecode SVN或者hg仓库检出
 # 2、将本地修改的更新回googlecode指定项目的svn或者hg仓库
 #
+
+#----2009-07-09更新： 加入wiki hg仓库的支持
 #----2009-07-04更新： 将googlecode用户信息存放到~/.googlecode下
 #
 APPNAME=$(basename "${0}")
@@ -19,7 +21,8 @@ usage ()
 {
     echo " 用法:  ${APPNAME} [选项]  命令 <命令选项>"
     echo " 选项:"
-    echo "    -p Project_Name   预上传到googlecode的项目名, 默认: archlive-pkg"
+    echo "    -p Project_Name   预上传到googlecode的项目名"
+    echo "       archlive相关项目 archlive  wiki.archlive  archlive-pkg  wiki.archlive-pkg"
     echo "    -u UserName	    Googlecode帐号"
     echo "    -w Passwd         Googlecode密码，访问http://code.google.com/hosting/settings获取"
     echo "    -m MESSAGE      提交到googlecode仓库的说明信息"
@@ -51,7 +54,7 @@ while getopts 'p:u:w:m:e:F:r:ifh' arg; do
     esac
 done
 
-[ "x$Project_Name" = "x" ] && (warn "必须指定googlecode项目名, $APPNAME -m "更新说明" -p 项目名 命令" && usage 1)
+[ "x$Project_Name" = "x" ] && (warn "必须指定googlecode项目名, $APPNAME -p 项目名 命令" && usage 1)
 URL="https://${Project_Name}.googlecode.com"
 SVN="$URL/svn/trunk"
 
@@ -84,21 +87,18 @@ echo "命令: $@"
 command_name="${1}"
 
 case "${command_name}" in
-    upload) target="${2}" ; remark="上传文件到googlecode软件仓" ;;
-    co) SVNDIR="${2}" ; remark="从googlecode指定项目检出文件到SVNDIR下" ;;
-    update) remark="将本地的修改更新到googlecode的SVN仓库" ;;
-    clone) SVNDIR="${2}" ; remark="从googlecode指定项目的hg仓库检出文件到SVNDIR下" ;;
-    push) remark="将本地的修改更新到googlecode的HG仓库" ;;
+    upload) target="${2}" ; remark="上传$target到googlecode软件仓" ;;
+    co) SVNDIR="${2}" ; remark="从googlecode指定项目检出文件到$SVNDIR下" ;;
+    update) remark="将本地的修改更新到googlecode的SVN仓库$Project_Name" ;;
+    clone) HGDIR="${2}" ; remark="从googlecode指定项目的hg仓库检出文件到HGDIR下" ;;
+    push) remark="将本地的修改更新到googlecode $Project_Name的HG仓库" ;;
     *) warn "未知命令'${command_name}'"; usage 1 ;;
 esac
 
-if [ "${command_name}" = "upload" ]; then 
-	[ "x${target}" = "x" ] && (warn "必须指定上传的目标文件或者目标目录" && usage 1)
-fi
+[ "${command_name}" = "upload" ] && [ "x${target}" = "x" ] && (warn "必须指定上传的目标文件或者目标目录" && usage 1)
 
-if [ "${command_name}" = "co" ]; then
-	[ "x${SVNDIR}" = "x" ] && (SVNDIR="archlive-pkg")
-fi
+if [ "${command_name}" = "co" ] && 	[ "x${SVNDIR}" = "x" ]; then SVNDIR=$Project_Name; fi
+if [ "${command_name}" = "clone" ] && [ "x${HGDIR}" = "x" ]; then HGDIR=$Project_Name; fi
 
 [ "${command_name}" = "update" -o "${command_name}" = "push" ] && [ "x$MESSAGE" = "x" ] && \
 	(warn "必须说明更新描述，以方便大家查看修改内容, $APPNAME -m "更新说明" -p 项目名 命令" && usage 1)
@@ -120,6 +120,9 @@ do_upload ()
 	chmod +x $START/googlecode_upload.py
     fi
     UPLOADPROG="$START/googlecode_upload.py"
+
+    #上传文件不支持wiki，换为对应的项目下载地址
+    Project_Name=${Project_Name#wiki.}
 
     list_in_project ${Project_Name} $START/old.list
 
@@ -178,7 +181,7 @@ do_upload ()
 	fi
     fi
     list_in_project ${Project_Name} $START/new.list
-    rm -f $START/{old.list,new.list}
+    #rm -f $START/{old.list,new.list}
 }
 
 # 从指定的SVN仓库检出
@@ -191,9 +194,10 @@ do_checkout ()
 #从指定的HG仓库检出
 do_clone ()
 {
-	echo "从$HG检出到$HGDIR下"
-	hg clone $HG $HGDIR
-	cd $HGDIR
+	HG="https://${Project_Name}.googlecode.com/hg"
+	echo "从$HG检出到${HGDIR}下"
+	hg clone $HG ${HGDIR}
+	cd ${HGDIR}
 }
 
 # 提交更新到googlecode的SVN仓
