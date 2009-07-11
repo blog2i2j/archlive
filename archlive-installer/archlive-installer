@@ -8,6 +8,7 @@
 # 2、加入Arch官方安装方式（爱好者自行加入）;
 # 3、多语言支持;
 #
+#2009-07-11 
 #2009-07-07 更新：如果启动前插入了U盘或者移动硬盘导致盘符错乱(sdb...)也可以正常安装.
 #		使用pamcan.static来安装arch软件包，以使在非Arch环境下也可以采用本安装程序根据软件清单快速安装Arch GNU/Linux。
 #
@@ -44,6 +45,7 @@ COPY_INSTALL="复制安装Archlive——将目前运行的这个Archlive系统�
 INSTALL_LOG=/tmp/install.log
 
 # 安装分区挂载位置
+if df | grep /tmp/install; then umount /tmp/install; fi
 if [ ! -d /tmp/install ]; then mkdir -p /tmp/install; fi
 INSTALL=/tmp/install
 
@@ -362,11 +364,15 @@ function copydir ()
 {
 	d=$( dirname $1 )
 	if [ "${d}" == "/" ]; then
-		cp -af $1 ${INSTALL}
+		Xdialog --title "复制文件" --time-out 20 --no-cancel --no-buttons \
+			--infobox "正在复制$1到${INSTALL}" 5 40
+		cp -afrv $1 ${INSTALL}  >2&1
 		echo "$(date +%D" "%T)	复制$1到${INSTALL}" >>${INSTALL_LOG}
 	else
 		mkdir -p ${INSTALL}${d}
-		cp -af $1 ${INSTALL}${d}
+		Xdialog --title "复制文件" --time-out 20 --no-cancel --no-buttons \
+			--infobox "正在复制$1到${INSTALL}${d}" 5 40
+		cp -afrv $1 ${INSTALL}${d}   >2&1
 		echo "$(date +%D" "%T)	复制$1到${INSTALL}${d}" >>${INSTALL_LOG}
 	fi
 }
@@ -413,9 +419,16 @@ function copyall ()
 	Xdialog --title "复制文件" --time-out 20 --no-cancel --no-buttons \
 		--infobox "正在复制文件到目标分区" 5 40
 
-	for dir in /boot /usr /home /bin /etc /root /sbin /srv /lib /opt /home /var; do
+	for dir in /boot /usr /home /bin /etc /root /sbin /dev /srv /lib /opt /home /var; do
 		copydir $dir
 	done	
+	for fs in ${INSTALL}/etc/*.larchsave; do
+        	mv -f ${fs} ${fs%.larchsave}
+    	done
+	if grep "#---LARCH-IGNORE---" ${INSTALL}/etc/pacman.conf &>/dev/null; then
+		sed "/#+++LARCH-IGNORE+++/,/#---LARCH-IGNORE---/ d" \
+			-i ${INSTALL}/etc/pacman.conf
+	fi
 }
 # 功能模块：提示安装成功
 function finished_installation ()
@@ -442,6 +455,7 @@ function add_fstab ()
 	MNT=$(device_mountdir /dev/$(basename $1))
 	FS=$(device_filesystem /dev/$(basename $1))
 	OPT=$(fs_options $FS fstab)
+	[ "x$MNT" = "x" ] && MNT="/"
 	if [ "x$OPT" != "x" ]; then fstab_add_line $FSTAB $DEVICE $MNT $FS $OPT; fi
 }
 # 功能模块： 更新fstab
@@ -461,7 +475,7 @@ function update_target_fstab ()
 
 	for targetpartition in target_root target_boot target_var target_home target_etc; do
 		if [ "$targetpartition" = "target_root" ]; then
-			add_fstab ${!targetpartition} ""
+			add_fstab ${!targetpartition} "/"
 		else
 			if [ "${!targetpartition}" != "${target_root}" ]; then
 				add_fstab ${!targetpartition}
@@ -499,13 +513,17 @@ function update_target_fstab ()
 	fstab_add_line $FSTAB tmpfs /var/log tmpfs defaults,mode=0755,size=1M
 	echo "$(date +%D" "%T)	修正目标系统fstab中的盘符sdb sdc到sda(如果启动前出入了U盘启动可能就需要修正)" >>${INSTALL_LOG}
 	sed -i "s%sd[b-z]%sda%g" $FSTAB
-	
+
+	echo "$(date +%D" "%T)	Archlive installer自动更新目标系统的fstab完成!结果如下：" >>${INSTALL_LOG}	
+	cat $FSTAB >>${INSTALL_LOG}
+	echo "--------   Auto added fstab --------------------"  >>${INSTALL_LOG}
+
 	Xdialog --title "编辑、查看目标系统的fstab" --fixed-font \
 		--editbox $FSTAB 0 0 2>$FSTAB$$
 	if [ $? -eq 0 ]; then mv -f $FSTAB$$ $FSTAB; fi
 	echo "$(date +%D" "%T)	目标系统fstab更新完成!结果如下： " >>${INSTALL_LOG}
 	cat $FSTAB >>${INSTALL_LOG}
-	echo "-------- fstab --------------------"  >>${INSTALL_LOG}
+	echo "--------  Final  fstab --------------------"  >>${INSTALL_LOG}
 }
 
 # 功能模块：创建启动内核镜像
@@ -522,6 +540,9 @@ function mkinitrdimg ()
 	fi
 	sed -i "s|\(^HOOKS=.*\) ide|\1${rplc}|" ${INSTALL}/etc/mkinitcpio.conf 2>&1 >>${INSTALL_LOG}
 
+	Xdialog --title "重新挂载proc sys dev" --time-out 10 --no-cancel --no-buttons \
+		--infobox "重新以 --bind 方式挂载proc sys dev以使mkinitcpio正常工作" 5 40
+
 	echo "$(date +%D" "%T)	重新以 --bind 方式挂载proc sys dev以使mkinitcpio正常工作:" >>${INSTALL_LOG}
 	mount --bind /proc ${INSTALL}/proc 2>&1 >>${INSTALL_LOG}
 	mount --bind /sys ${INSTALL}/sys 2>&1 >>${INSTALL_LOG}
@@ -532,6 +553,8 @@ function mkinitrdimg ()
         sed "s|//|/|" >${INSTALL}/etc/mtab 2>&1 >>${INSTALL_LOG}
 
 	#创建启动内核镜像
+	Xdialog --title "创建启动内核镜像" --time-out 10 --no-cancel --no-buttons \
+		--infobox "创建启动内核镜像" 5 40
     	chroot ${INSTALL} /sbin/mkinitcpio -p ${presets%.preset} 2>&1 >>${INSTALL_LOG}
 
 	:>${INSTALL}/etc/mtab
@@ -548,6 +571,10 @@ function mkinitrdimg ()
 function init_menu_list ()
 {	
 	menulist=${INSTALL}/boot/grub/menu.lst
+
+	Xdialog --title "初始化$menulist" --time-out 10 --no-cancel --no-buttons \
+		--infobox "初始化$menulist文件" 5 40
+
 	echo "$(date +%D" "%T)	初始化$menulist文件" >>${INSTALL_LOG}
 	if [ -f $menulist ]; then rm -f $menulist; fi
 	echo "######      menu.lst由archlive-installer于$(date +%D" "%T)初始化      ######" > $menulist
@@ -573,19 +600,19 @@ function init_menu_list ()
 	imgname=$(basename ${default_image})
 	fallbackimgname=$(basename ${fallback_image})
 
-	bootindex=${target_boot#/dev/sd[a-z]}
+	bootindex=${target_boot#/mnt/sd[a-z]}
 	let bootindex-=1
 	if [ "${target_boot}" != "${target_root}" ]; then bootdir=""; else bootdir="/boot"; fi
 
 	echo "title  Arch Linux (Installed by Archlive-installer)" >>$menulist
 	echo "root (hd0,$bootindex)" >>$menulist
-	echo "kernel $bootdir/${boot_kernel} root=/dev/sda${target_root#/dev/sd[a-z]} ro vga=791" >>$menulist
+	echo "kernel $bootdir/${boot_kernel} root=/dev/sda${target_root#/mnt/sd[a-z]} ro vga=791" >>$menulist
 	echo "initrd $bootdir/$imgname" >>$menulist
 
 	echo "" >>$menulist
 	echo "title  Arch Linux (Safemode, Installed by Archlive-installer)" >>$menulist
 	echo "root (hd0,$bootindex)" >>$menulist
-	echo "kernel $bootdir/${boot_kernel} root=/dev/sda${target_root#/dev/sd[a-z]} ro vga=791" >>$menulist
+	echo "kernel $bootdir/${boot_kernel} root=/dev/sda${target_root#/mnt/sd[a-z]} ro vga=791" >>$menulist
 	echo "initrd $bootdir/$fallbackimgname" >>$menulist
 	echo "" >>$menulist
 
@@ -600,6 +627,8 @@ function init_menu_list ()
 
 	echo "$(date +%D" "%T)	初始化$menulist文件完成，内容如下：" >>${INSTALL_LOG}
 	cat $menulist >>${INSTALL_LOG}
+	Xdialog --title "初始化$menulist完成！" --time-out 10 --no-cancel --no-buttons \
+		--infobox "初始化$menulist完成！" 5 40
 }
 # 功能函数：安装grub
 function installgrub ()
