@@ -11,6 +11,7 @@
 usage ()
 {
     echo " usage ${APPNAME} [选项] 命令 <命令选项>"
+    echo " 本制作程序须用管理员身份或者sudo来执行，须要aufs文件系统的支持，同时有mksquashfs cdrkit等软件"
     echo " 一般选项:"
     echo "    -f               强制覆盖现有的工作目录等，全部重新制作"
     echo "    -i CPIO_CONFIG   用CONFIG 作为archlive启动内核配置文件. 默认: ${CPIOCONFIG}"
@@ -24,6 +25,7 @@ usage ()
     echo "    -v               运行输出结果."
     echo "    -h               本帮助信息."
     echo " 命令:"
+    echo "     prepare                 : 准备iso根目录结构及overlay"
     echo "     install <工作目录>        : 将程序安装到工作目录下"
     echo "     squash <工作目录>         : 从指定的目录创建squash模块"
     echo "     imgprepare <工作目录>     : 从指定的目录制作archlive启动内核模块及基本模块等"
@@ -42,6 +44,8 @@ if [ $? -ne 0 ]; then
    echo "无法装载aufs文件系统模块,退出。"
    exit 1
 fi
+# 检查是否存在mksquashfs命令
+[ "x$(whereis mksquashfs | cut -d ":" -f 2)" = "x" ] && (echo "无效参数 '${arg}'"; usage 1)
 
 REPO_ADD="$(pwd)/../../repo/repo-add"
 CPIOCONFIG="$(pwd)/archlive-mkinitcpio.conf"
@@ -112,6 +116,7 @@ work_dir=""
 imgname=""
 
 case "${command_name}" in
+    prepare) ;;
     install) work_dir="${2}" ;;
     squash) work_dir="${2}" ;;
     imgprepare) work_dir="${2}" ;;
@@ -152,6 +157,9 @@ lastbr="${work_dir}/empty"
 moduleplace="${IMGROOT}/${CDNAME}/base"
 moduledir="${work_dir}/modules"
 INSTROOT="${moduledir}/$(basename ${ROOT_MOD} .list)"
+PKGFILE="${IMGROOT}/packages.list"
+packlist="$(pwd)/${work_dir}/packlist"
+buildlog="$(pwd)/${work_dir}/log"
 
 _kversion ()
 {
@@ -182,7 +190,7 @@ custom_repo ()
 }
 is_in_pacmanconf ()
 { 
-   if [ $(cat ${PACMANCONF} | sed -r "s/#.*//" | egrep  "^\[*${REPO_Name}\]$") = "[${REPO_Name}]" ]; then
+   if [ "$(cat ${PACMANCONF} | sed -r "s/#.*//" | egrep  "^\[*${REPO_Name}\]$")" = "[${REPO_Name}]" ]; then
 	echo "1"
    else
 	echo "0"
@@ -198,20 +206,13 @@ add_customrepo2pacmanconf ()
 	\nServer = file://$REPO" ${PACMANCONF}
 }
 
-command_install () {
+command_prepare (){
 
     if [  "x$REPO_Name" != "x" -a "x$REPO" != "x" ]; then
        info "建立自定义软件仓..."
-       #python ../../repo/gen_repo ${REPO} ${REPO_Name}
        custom_repo ${REPO} ${REPO_Name}
        echo "自定义软件仓建立完成"
        if [ $(is_in_pacmanconf) = "0" ]; then add_customrepo2pacmanconf; fi
-    fi
-    info "开始进行Archlive的制作..."
-    if [ -e "${work_dir}" -a "${FORCE}" = "n" ]; then
-        error "错误: 工作目录'${work_dir}'已经存在 , 退出."
-        error "       加入 -f 参数覆盖现有安装目录"
-        exit 1
     fi
 
     info "准备目标镜像根目录结构及启动的相关配置文件"
@@ -290,7 +291,15 @@ command_install () {
     find "${OVERLAY}" -name ".svn" -type d > exclude
     rm exclude
     info "overlay准备完毕"
+}
+command_install () {
 
+    info "开始进行Archlive的制作..."
+    if [ -e "${work_dir}" -a "${FORCE}" = "n" ]; then
+        error "错误: 工作目录'${work_dir}'已经存在 , 退出."
+        error "       加入 -f 参数覆盖现有安装目录"
+        exit 1
+    fi
     mkdir -p "${IMGROOT}"
     mkdir -p "${INSTROOT}"
     mkdir -p "${lastbr}"
@@ -310,15 +319,31 @@ command_install () {
     fi
 
      # 软件安装日志文件夹
-    if [ -e $work_dir/log ]; then
-	rm -R $work_dir/log
-    fi
-    mkdir -p $work_dir/log
+	if [ -d ${buildlog} ]; then
+		rm -R ${buildlog}
+	fi
+	mkdir -p ${buildlog}
+
+     # 软件清单文件夹
+	if [ -d ${packlist} ]; then
+		rm -R ${packlist}
+	fi
+	mkdir -p ${packlist}
+
+     # 如果已经存在软件仓数据信息文件夹，则删除
+	if [ -d "${INSTROOT}/var/lib/pacman/sync" ]; then
+		rm -R "${INSTROOT}/var/lib/pacman/sync"
+	fi
 
     for mod in ${MODULES}; do
         mkdir -p "${moduledir}/${mod}"
+
+	info "将${moduledir}/${mod}挂载为aufs系统的最高层——可写"
         mount -o remount,add:0:${moduledir}/${mod}=rw aufs ${union}
-        mount -o remount,mod:${lastbr}=ro aufs ${union}
+
+	info "将${lastbr}挂载为aufs文件系统的低层——只读"
+#        mount -o remount,mod:${lastbr}=ro aufs ${union}
+	mount -o remount,mod:${lastbr}=rr+wh aufs ${union}
         lastbr="${moduledir}/${mod}"
 
         if [ -e "${union}/var/lib/pacman/db.lck" ]; then
@@ -331,27 +356,39 @@ command_install () {
         mknod ${union}/dev/console c 5 1 >/dev/null
         mknod ${union}/dev/null c 1 3 >/dev/null
         mknod ${union}/dev/zero c 1 5 >/dev/null
-        
-        $PACMAN -Sy --noprogressbar --noconfirm --config "${PACMANCONF}" -fr "${union}"
+ 
+	# 如果没有软件仓库信息，才更新软件仓数据库信息(安装第一个模块时需要更新，后续模块不更新)      
+	if [ ! -d "${INSTROOT}/var/lib/pacman/sync/core" ]; then
+		$PACMAN -Sy --noprogressbar --noconfirm --config "${PACMANCONF}" -fr "${union}"
+		rmdir --ignore-fail-on-non-empty ${INSTROOT}/var/lib/pacman/local
+	fi
 
-        cat  "$(pwd)/$LISTDIR/${mod}.list" | grep -v "^#" | while read pkgname; do
-            info "安装 $pkgname"
-            $PACMAN -S -f --needed --noconfirm --config "${PACMANCONF}" --cachedir "$CACHE" -r "$union" $pkgname | tee -a ${work_dir}/log/${mod}-current.log
-            if [ $? -ne 0 ]; then
-                warn "$pkgname 没有正确安装"
-                cat ${work_dir}/log/${mod}-current.log >> ${work_dir}/log/${mod}-errors.log
-            fi
-        done	
-        if [ -e "$(pwd)/$LISTDIR/${mod}.removelist" ]; then
-            cat "$(pwd)/$LISTDIR/${mod}.removelist" | grep -v "^#" | while read pkgname; do
-                info "删除 $pkgname"
-                $PACMAN -R -d -n --noprogressbar --needed --noconfirm --config "${PACMANCONF}" -r "$union" $pkgname &> /dev/null
-            done
-        fi
-
-        if [ -f ${moduledir}/001_devel/1 ]; then
-		rm -rf ${moduledir}/001_devel/1
-	  fi
+	# 如果已经有已经安装软件信息（再加入-f参数重新制作archlive的时候）则只是更新已经安装软件以节省时间
+	if [ -d ${moduledir}/${mod}/var/lib/pacman/local ]; then
+		pacman -Q -r ${moduledir}/${mod} > ${packlist}/${mod}.old
+		pacman -Su -f --needed --noconfirm --config "${PACMANCONF}" -fr "${union}"
+	elif [ ! -d ${moduledir}/${mod}/var/lib/pacman/local ]; then
+		touch ${packlist}/${mod}.old
+        	cat  "$(pwd)/$LISTDIR/${mod}.list" | grep -v "^#" | while read pkgname; do
+            		info "安装 $pkgname"
+            		$PACMAN -S -f --needed --noconfirm --config "${PACMANCONF}" --cachedir "$CACHE" -r "$union" $pkgname | tee -a ${buildlog}/${mod}-current.log
+            		if [ $? -ne 0 ]; then
+                		warn "$pkgname 没有正确安装"
+                		cat ${buildlog}/${mod}-current.log >> ${buildlog}/${mod}-errors.log
+        		fi
+        	done	
+        	if [ -e "$(pwd)/$LISTDIR/${mod}.removelist" ]; then
+            		cat "$(pwd)/$LISTDIR/${mod}.removelist" | grep -v "^#" | while read pkgname; do
+                	info "删除 $pkgname"
+                	$PACMAN -R -d -n --noprogressbar --needed --noconfirm --config "${PACMANCONF}" -r "$union" $pkgname &> /dev/null
+            		done
+        	fi
+	fi
+	# 输出模块软件清单
+	pacman -Q -r ${moduledir}/${mod} > ${packlist}/${mod}.new
+	if [ -f ${packlist}/${mod}.old ]; then
+		packagediff.py ${packlist}/${mod}.old ${packlist}/${mod}.new > ${packlist}/${mod}.list
+	fi
 	
         if [ -e "${union}/etc/ld.so.conf" ]; then
             ldconfig -r ${union}
@@ -360,6 +397,7 @@ command_install () {
         if [ -d "${union}/usr/share/icons" ]; then
             remove "${union}/usr/share/icons/hicolor/icon-theme.cache"
             remove "${union}/usr/share/icons/Rodent/icon-theme.cache"
+	    remove "${union}/usr/share/icons/nuoveXT2/icon-theme.cache"
         fi
 
           # 删除为宿主系统创建的内核镜像文件
@@ -369,12 +407,8 @@ command_install () {
           # 清理系统
         info "清理无用文件..."
         find "${union}" -name *.pacnew -name *.pacsave -name *.pacorig -delete
-
-        if [ "${mod:4:7}" = "archpwn" ]; then
-            kill_dirs="var/cache/man var/cache/pacman var/log/* var/mail tmp/ initrd"
-        else
-            kill_dirs="var/cache/man var/cache/pacman var/log/* var/mail tmp/* initrd ${DELDIR}"
-        fi
+	# 删除指定的文件夹
+        kill_dirs="var/cache/man var/cache/pacman var/log/* var/mail tmp/* initrd ${DELDIR}"
         for x in ${kill_dirs}; do
             if [ -e "${union}/${x}" ]; then
                 rm -Rf "${union}/${x}"
@@ -428,6 +462,8 @@ command_install () {
     #echo "Removing unionfs .wh. files."
     find ${moduledir} -type f -name ".wh.*" -exec rm {} \;
     find ${moduledir} -type d -name ".wh.*" -exec rm -rf {} \;
+    # 删除模块目录中软件仓数据库信息
+    find ${moduledir}/*/var/lib/pacman/sync -type d -exec rm -rf {} \; 2>/dev/null
 
      # 备份Arch原始启动关机脚本，以便Larchin安装
     for larchsavefile in ${moduledir}/000_base/etc/{rc.sysinit,rc.shutdown,rc.local}; do
@@ -441,36 +477,50 @@ command_squash () {
 
     start=$(date +%s)
 
-    if [ -d "${MODULESCOPY}" ]; then
-        cp -r ${MODULESCOPY}/* "${IMGROOT}/${CDNAME}/modules"
-    fi
+    # 如果-f来在上次制作archlive的基础上再制作的时候只对有改变的模块进行相关操作
+    find ${packlist} -size +0 -name "*.list" > ${packlist}/updated.list
+    sed -i "s|${packlist}/updated.list||g" ${packlist}/updated.list
+    sed -i "s|${packlist}/||g" ${packlist}/updated.list
+    sed -i "s|.list||g" ${packlist}/updated.list
 
     for DIR in $MODULES; do
         MOD="$(basename $DIR).${EXT}"
         info "创建模块 $MOD"
-        if [ "${QUIET}" = "y" ]; then
+        if [ ! "$(find "$IMGROOT/$CDNAME" -name "$MOD")" ]; then
 		if [ -d ${moduledir}/$DIR/usr/share/fonts ]; then 
 			chmod 755 ${moduledir}/$DIR/usr/share/fonts
 		fi
 		if [ -d ${moduledir}/$DIR/etc/fonts ]; then
 			chmod 755 ${moduledir}/$DIR/etc/fonts
                 fi
-            /sbin/mksquashfs ${moduledir}/$DIR ${moduleplace}/$MOD -noappend ${OPTION} > /dev/null
-        else
-            /sbin/mksquashfs ${moduledir}/$DIR ${moduleplace}/$MOD -noappend ${OPTION}
-        fi
-        chmod 0444 ${moduleplace}/$MOD
+		if [ "${QUIET}" = "y" ]; then
+			mksquashfs ${moduledir}/$DIR ${moduleplace}/$MOD -noappend ${OPTION} >/dev/null
+		else
+			mksquashfs ${moduledir}/$DIR ${moduleplace}/$MOD -noappend ${OPTION}
+		fi
+		if [ $(cat ${packlist}/updated.list | grep $DIR) ]; then
+			sed -i "s|$DIR||g" ${packlist}/updated.list
+		fi
+		chmod 0755 ${moduleplace}/$MOD
+	fi
     done
+    cat "${packlist}/updated.list" | tr '\n' ' ' > "${packlist}/updated"
+    MODULES=$(cat ${packlist}/updated)
+    if [ "$MODULES" = "" ]; then
+	info "没有编译模块"
+    else
+	mksquash ${moduledir}/ -noappend ${OPTION}
+    fi
 
     if [  -d $(pwd)/overlay ]; then 
-	    info "创建附加设置模块overlay.${EXT}..."
-	    OVERLAY="$(pwd)/overlay"
-	    if [ "${QUIET}" = "y" ]; then
-        	/sbin/mksquashfs "${OVERLAY}" "${IMGROOT}/${CDNAME}/base/overlay.${EXT}" -noappend  ${OPTION} >/dev/null
-    	    else
-		/sbin/mksquashfs "${OVERLAY}" "${IMGROOT}/${CDNAME}/base/overlay.${EXT}" -noappend ${OPTION}
-    	    fi
-	   chmod 0444 "${IMGROOT}/${CDNAME}/base/overlay.${EXT}"
+	info "创建附加设置模块overlay.${EXT}..."
+	OVERLAY="$(pwd)/overlay"
+	if [ "${QUIET}" = "y" ]; then
+           /sbin/mksquashfs "${OVERLAY}" "${IMGROOT}/${CDNAME}/base/overlay.${EXT}" -noappend  ${OPTION} >/dev/null
+        else
+	  /sbin/mksquashfs "${OVERLAY}" "${IMGROOT}/${CDNAME}/base/overlay.${EXT}" -noappend ${OPTION}
+       fi
+     chmod 0444 "${IMGROOT}/${CDNAME}/base/overlay.${EXT}"
     fi
 
     minutes=$(echo $start $(date +%s) | awk '{ printf "%0.2f",($2-$1)/60 }')
@@ -590,6 +640,9 @@ command_img () {
      fi
 }
 
+if [ "${command_name}" = "prepare" -o "${command_name}" = "all" ]; then
+	command_prepare
+fi
 if [ "${command_name}" = "install" -o "${command_name}" = "all" ]; then
 	command_install
 fi
