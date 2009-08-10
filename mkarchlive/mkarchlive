@@ -7,6 +7,8 @@
 # 打包放在http://archlive.googlecode.com/files/中
 # 脚本运行的时候会先自动下载部分配置文件。。。
 
+# 2009-08-10 修改判断软件仓是否已经在pacman.conf中定义的判断方式
+
 # usage: usage <exitvalue>
 usage ()
 {
@@ -15,7 +17,7 @@ usage ()
     echo " 一般选项:"
     echo "    -f               强制覆盖现有的工作目录等，全部重新制作"
     echo "    -i CPIO_CONFIG   用CONFIG 作为archlive启动内核配置文件. 默认: ${CPIOCONFIG}"
-    echo "    -n NOLZMA        不使用squashfs+lzma压缩模块，而使用基本squashfs."
+    echo "    -l LZMA=y        使用squashfs+lzma压缩模块，而不使用基本squashfs."
     echo "    -c CDNAME        liblinuxlive脚本默认文件夹名. 默认: archlive"
     echo "    -b BOOT		启动选项(syslinux,grub,grub-gfx)"
     echo "    -M MODULES       livecd的模块. 默认: ${MODULES}"
@@ -95,7 +97,7 @@ while getopts 'i:P:b:M:m:a:t:c:nfvh' arg; do
 	a) ADDON_DIR="${OPTARG}" ;;
 	t) IMG_TYPE="${OPTARG}" ;;
 	c) CDNAME="${OPTARG}" ;;
-	n) NOLZMA="n" ;;
+	l) LZMA="y" ;;
 	f) FORCE="y" ;;
 	v) QUIET="n" ;;
         h|?) usage 0 ;;
@@ -133,12 +135,12 @@ if [ "x${imgname}" = "x" ]; then imgname="$work_dir/archlive-$(date +%F).iso"; f
 #archlive最终软件清单
 PKGFILE="$work_dir/packages.list"
 
-if [ "${NOLZMA}" = "n" ]; then
-	EXT="sqfs"
-	OPTION="-nolzma"
-else
+if [ "${LZMA}" = "y" ]; then
 	EXT="lzm"
 	OPTION=""
+else
+	EXT="sqfs"
+	OPTION="-nolzma"
 fi
 
 info "${APPNAME} : 程序设置"
@@ -189,12 +191,14 @@ custom_repo ()
     rm -rf $1/$2.db.tar.gz.old
 }
 is_in_pacmanconf ()
-{ 
-   if [ "$(cat ${PACMANCONF} | sed -r "s/#.*//" | egrep  "^\[*${REPO_Name}\]$")" = "[${REPO_Name}]" ]; then
-	echo "1"
-   else
-	echo "0"
-   fi
+{
+a=$(cat pacman.conf | sed -r "s/#.*//")
+case $a in 
+*[$REPO_Name]*)
+	case $a in *file://$REPO*) return 0;; esac
+;;
+esac
+return 1
 }
 
 # 将自定义的软件仓加入到PACMANCONF中，默认第一优先
@@ -204,6 +208,7 @@ add_customrepo2pacmanconf ()
    sed -i "/# and they will be used before the default mirrors./ a\
 	\ \n[${REPO_Name}]\
 	\nServer = file://$REPO" ${PACMANCONF}
+   echo "将自定义软件仓加入${PACMANCONF}完成"
 }
 
 command_prepare (){
@@ -212,7 +217,7 @@ command_prepare (){
        info "建立自定义软件仓..."
        custom_repo ${REPO} ${REPO_Name}
        echo "自定义软件仓建立完成"
-       if [ $(is_in_pacmanconf) = "0" ]; then add_customrepo2pacmanconf; fi
+       if ! is_in_pacmanconf; then add_customrepo2pacmanconf; fi
     fi
 
     info "准备目标镜像根目录结构及启动的相关配置文件"
