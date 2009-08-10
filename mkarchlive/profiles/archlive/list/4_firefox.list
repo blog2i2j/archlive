@@ -1,0 +1,8 @@
+#
+# firefox-archlive 46.15MB
+# mspr nss
+firefox-pgo-archlive
+# Archlive定制包
+#
+firefox-archlive-addons
+# Archlive定制包, 3.5版firefox插件

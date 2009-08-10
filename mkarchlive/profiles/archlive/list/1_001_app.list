@@ -1,0 +1,322 @@
+################### 一些基本编译开发工具
+#bc    前面已经加上
+# An arbitrary precision calculator language  0.23MB  chakra-hardware-detection: 要求 bc
+######base-devel 包含： （86.99MB)
+#ed
+# A POSIX-compliant line editor  0.11MB
+#binutils
+# A set of programs to assemble and manipulate binary and object files  9.91MB
+# gcc 需要此包
+libtool
+# A generic library support script  2.47MB 
+# aircrack-ng-svn 等需要此包
+pkgconfig
+# A system for managing library compile/link flags 0.10MB
+#m4
+# m4 macro processor 0.25MB  autoconf依赖于此包
+#autoconf
+# A GNU tool for automatically configuring source code   2.55MB
+#automake
+# A GNU tool for automatically creating Makefiles  1.80MB
+#bin86
+#bison
+fakeroot
+# Gives a fake root environment, useful for building packages as a non-privileged user  0.12MB
+#flex
+#ppl
+#cloog-ppl
+#gcc
+make
+#######################
+yaourt
+# A Pacman frontend with more features and AUR support 0.33MB
+#
+neon
+# HTTP and WebDAV client library with a C interface 1.16MB  subversion依赖于此软件
+#
+perl-error
+# Perl/CPAN Error module - Error/exception handling in an OO-ish way 0.07MB  git依赖于此软件
+#
+#mpfr
+# multiple-precision floating-point library 0.97MB   gcc 依赖于此软件
+#
+#nasm
+# 80x86 assembler designed for portability and modularity 0.79MB   目前测试无须此包
+#
+libxml2
+# XML parsing library, version 2   10.99MB   conky openbox 等以来此库
+###################
+#
+abs
+# Utilities to download and work with the Arch Build System (ABS)   0.12MB
+#git
+#GIT - the stupid content tracker  13.62MB
+#
+#cvs 
+#Concurrent Versions System - a source control system 1.49MB
+#
+# scons extra  SCons is an open source software contruction tool that is a substitute for make.3.95MB
+#scons
+pacbuilder-svn
+# A tool to massively recompile archlinux packages from sources   0.10MB
+#devtools
+# namcap
+# A few tools to help Arch Linux developers   0.10MB
+aurtools
+# Tools for TUs and Developers for manipulating the community repo   0.01MB
+pkgtools
+# A collection of scripts for Arch Linux packages  0.14MB
+#
+#gdb
+# gdb extra The GNU Debugger   7.55MB
+#
+#distcc
+# 依赖于 mpfr ppl cloog-ppl
+# A distributed C, C++, Obj C compiler  0.62MB  依赖于gcc
+#
+#bzr
+# A decentralized revision control system  23.0MB
+#mercurial
+# mercurial A scalable distributed SCM tool  5.73MB
+################### 数据维护工具
+#ddrescue
+# GNU data recovery tool   0.12MB
+#
+#foremost
+# A console program to recover files based on their headers, footers, and internal data structures.  0.11MB
+#
+#libjpeg
+#testdisk
+#依赖于 progsreiserfs fuse ntfsprogs libjpeg 
+#Tool to check and undelete partition and recover pictures from digital camera memory  4.58MB
+#
+#sleuthkit
+# File system and media management forensic analysis tools (supports NTFS, FAT, UFS1/2, FFS, Ext2 and Ext3)
+#  6.77MB
+################# 高级网络工具及安全相关
+#vorbis-tools
+# run-parts ca-certificates curl flac
+# Extra tools for Ogg-Vorbis    4.42MB
+#
+openssh
+# sqlite3   heimdal
+# A Secure SHell server/client  1.85MB
+#
+openvpn
+# An easy-to-use, robust, and highly configurable VPN (Virtual Private Network)  0.59MB
+#
+#wireless-regdb iw
+#crda
+#Central Regulatory Domain Agent  0.09MB
+#
+dnsutils
+# Various DNS utilities - dig host nslookup nsupdate  5.50MB
+#gnu-netcat
+# GNU rewrite of netcat, the network piping application  0.09MB
+#
+# elinks
+#lua libidn nspr spidermonkey
+# An advanced and well-established feature-rich text mode web browser.
+#
+# irssi
+#Modular text mode IRC client with Perl scripting   3.89MB
+#nmap
+# A network exploration tool and security/port scanner  0.12MB
+#
+#rdiff-backup
+# librsync
+#A utility for local/remote mirroring and incremental backups  1.50MB
+#
+#rsnapshot
+# A remote filesystem snapshot utility 0.27MB
+#
+lsof
+# lsof (LiSt Open Files) lists information about files that are open by the running processes  0.19MB
+#
+#gmime
+# Core mime parsing library  1.28MB
+#
+#tcpdump
+# A tool for network monitoring and data acquisition  1.23MB
+#
+#tcpflow
+# Captures data transmitted as part of TCP connections then stores the data conveniently. 0.04MB
+#
+#libevent 
+# An event notification library0.67MB
+#tor
+# TOR Client 依赖于libevent 3.21MB
+#
+#inputproto
+#xextproto
+#xcb-proto
+#libxdmcp
+#libxau
+#kbproto
+#libx11
+#libxext
+#libxt
+#libxmu
+#dsniff
+# 依赖于 inputproto xextproto libxext libxt libxmu
+# Collection of tools for network auditing and penetration testing. 4.23MB
+#
+#ipcheck
+# A simple python script to register your dynamic IP address using the NIC V2.0 protocol  0.17MB
+#
+#ipguard
+# ipguard - arp<->ip relation checking tool  0.07MB
+#
+macchanger
+# A small utility to change you NIC's MAC address  0.23MB
+#
+#netcount
+# network statistic and monitor tools  0.11MB
+#
+#netbrake
+# Netbrake is an utility to limit the bandwidth used by a process 0.04MB
+#
+#vnstat
+# network traffic monitor for Linux that keeps a log of daily network traffic for the selected interface(s)  0.20MB
+#
+#rtorrent
+# libsigc++2.0-2.2.3-1  libtorrent-0.12.2-2  xmlrpc-c
+#  Ncurses BitTorrent client based on libTorrent  19.48MB
+#
+#aesfix
+# A tool to find AES key in RAM  0.07 MB
+#
+#aeskeyfind
+# A tool to find AES key in RAM  0.04MB
+#
+#aircrack-ng-svn
+# Wifi security suite - WEP / WPA crack tools -- with SQLite3.  1.25MB
+#
+#airoscript
+# Shell script designed to ease the use of aircrack-ng  0.38MB
+#
+#autopsy
+# The Autopsy Forensic Browser is a GUI for The Sleuth Kit. 1.27MB
+#
+#bob-the-butcher
+# a distributed password cracker package  0.40MB
+#
+#chntpw
+# Utility to (re)set the password of any user that has a valid (local) account on Windows NT/2K/XP system  0.11MB
+#
+#cmospwd
+# CmosPwd decrypts password stored in cmos used to access BIOS SETUP. 0.04MB
+#
+#cowpatty
+# Wireless WPA/WPA2 PSK handshake cracking utility  0.04MB
+#
+#elettra
+# libmcrypt mhash
+# Encryption utility by Julia Identity   0.88MB
+#
+#g72x++
+# Decoder for the g72x++ codec  0.04MB
+#
+#iodine
+# Lets you tunnel IPv4 data through a DNS server. 0.10MB
+#
+#kismet-newcore-svn
+# libcap
+# Next generation of the wireless network sniffer  3.76MB
+#
+#lorcon
+# Create what libradiate could have been: A generic library for injecting 802.11 frames, capable of injection via multiple driver frameworks, without
+# forcing modification of the application code.  0.24MB
+#
+#lynis
+# Lynis is an auditing tool for Unix (specialists)  0.51MB
+#
+#matahari
+# pycrypto 
+# A reverse HTTP shell to execute commands on remote machines behind firewalls.  0.71MB
+#
+#mdk3
+# WLAN penetration tool 0.12MB
+#
+#memfetch
+# dumps any userspace process memory without affecting its execution  0.03MB
+#
+#netdiscover
+# libnet 
+# Netdiscover is an active/passive address reconnaissance tool, mainly developed for those wireless networks without dhcp server, when you are
+# wardriving. It can be also used on hub/switched networks.  0.85MB
+#
+#nikto
+# perl-net-ssleay
+# Nikto is a web server scanner which performs comprehensive tests against web servers for multiple items 3.40MB
+#
+#
+#p0f
+# passive OS fingerprinting tool  0.15MB
+#
+#passcracking
+# A little python script for sending hashes to passcracking.com and milw0rm  0.02MB
+#
+#radare-hg
+# A collection of tools with the aim to create a complete, portable, multi-architecture, unix-like toolchain for reverse engineering.
+#  2.30MB
+#
+#rainbowcrack
+# Password cracker based on the faster time-memory trade-off. Additional patches (NTLM, MD2, MD4, RIPEMD160, MySQL and Cisco PIX) included.
+# 0.20MB
+#
+#ratproxy
+# A passive web application security assessment tool 0.23MB
+#
+#rsakeyfind
+# A tool to find RSA key in RAM 0.04MB
+#
+#samdump2
+# Dump password hashes from a Windows NT/2k/XP installation 0.04MB
+#
+#sqlmap
+#  sqlmap is an automatic SQL injection tool developed in Python 1.52MB
+#
+#clamav
+# Anti-virus toolkit for Unix. 2.71MB
+#
+#foldingathome
+# Folding@Home is a distributed computing project which studies protein folding, misfolding, aggregation, and related diseases.
+#  0.30MB
+############### WEB 服务器
+#apache
+# apr libsasl libldap unixodbc apr-util
+# A high performance Unix-based HTTP server  9.67MB
+#
+#lighttpd
+# a secure, fast, compliant and very flexible web-server  0.86MB
+# 
+#gnump3d
+# A streaming server for MP3s, OGG vorbis files, movies and other media formats. 2.39MB
+#############   CUPS
+#cups
+# openslp libtiff libpng libcups xdg-utils xcb-proto libxdmcp libxau libxcb kbproto libx11 dbus libcap libdaemon avahi freetype2 fontconfig
+# renderproto libxrender pixman xcb-util cairo libxml2 openjpeg poppler
+#The CUPS Printing System   58.38MB
+############   SQL相关 (数据库相关）
+#
+#libmysqlclient
+# MySQL client libraries   31.12MB
+#mysql-clients
+# MySQL client tools   0.63MB
+#
+#mysql-python
+# MySQL support for Python 0.31MB
+#postgresql-libs
+# Libraries for use with PostgreSQL 1.41MB
+###########  其他
+#espeak
+# libsndfile jack-audio-connection-kit portaudio
+#Text to Speech engine for good quality English, with support for other languages  5.55MB
+#aspell-en
+# aspell
+# A spell checker designed to eventually replace Ispell, English dictionary for aspell
+#
+#weechat
+# ruby libtasn1 gnutls
+# Fast, light & extensible IRC client (curses UI)  66.99MB

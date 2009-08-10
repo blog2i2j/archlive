@@ -5,7 +5,28 @@ KERNEL="/etc/mkinitcpio.d/kernel26.kver"
 LISTDIR="list"
 #LISTDIR="list list28 list29"
 # 模块清单   默认在list文件夹中读取
-MODULES="000_base 001_app 002_xorg 003_xlib 004_xapps"
+MODULES="0_000_core
+0_001_base
+0_002_python
+1_001_app
+2_003_xorg
+3_004_xlib
+3_005_xapps
+3_qt
+4_dropbox
+4_firefox
+4_gimp
+4_opera
+4_printer
+4_skype
+4_virtualbox
+4_wine
+5_006_e17_svn
+5_007_xfce4_svn
+5_008_gnome
+5_009_kdemod
+5_compiz-icon"
+
 
 # 自定义软件仓
 #REPO=/mnt/sda3/cpkg
@@ -29,5 +50,5 @@ ICON="gos3"
 CURSOR=""
 #CURSOR="mac4lin"
 #附加字体包 **-font.tgz
-EXTRAFONTS="iYaHei"
+EXTRAFONTS=""
 #EXTRAFONTS="iYaHei yahei"

@@ -6,9 +6,9 @@
 # 为简化googlecode的svn版本维护的简单化，将部分配置文件
 # 打包放在http://archlive.googlecode.com/files/中
 # 脚本运行的时候会先自动下载部分配置文件。。。
-
+#
 # 2009-08-10 修改判断软件仓是否已经在pacman.conf中定义的判断方式
-
+#
 # usage: usage <exitvalue>
 usage ()
 {
@@ -190,15 +190,14 @@ custom_repo ()
     done
     rm -rf $1/$2.db.tar.gz.old
 }
-is_in_pacmanconf ()
+is_in_pacmanconf () 
 {
-a=$(cat pacman.conf | sed -r "s/#.*//")
-case $a in 
-*[$REPO_Name]*)
-	case $a in *file://$REPO*) return 0;; esac
-;;
-esac
-return 1
+	a=$(cat pacman.conf | sed -r "s/#.*//")
+	case $a in 
+		*[$REPO_Name]*) case $a in *file://$REPO*) return 0;; esac
+		;;
+	esac
+	return 1
 }
 
 # 将自定义的软件仓加入到PACMANCONF中，默认第一优先

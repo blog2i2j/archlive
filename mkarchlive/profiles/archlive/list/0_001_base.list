@@ -1,0 +1,421 @@
+############## base 软件组包含 (490.11MB)
+busybox
+kernel-headers
+# Kernel headers sanitized for use in userspace   3.88MB  基本库
+tzdata
+# Sources for time zone and daylight saving time data  5.34MB  基本库
+glibc
+# GNU C Library  31.59MB  最基本库  必须保留  (Archlive精简版，只有中文支持，14.2MB）
+attr
+# Extended attribute support library for ACL support 0.37MB  基本库
+acl
+# Library for filesystem ACL support  0.57MB  基本库
+bzip2
+# A high-quality data compression program 0.25MB  基本工具
+zlib
+# A compression/decompression Library 0.30MB  基本库
+ncurses
+# System V Release 4.0 curses emulation library 8.96MB   基本库
+readline
+# GNU readline library   1.05MB   基本库
+bash
+# The GNU Bourne Again shell 1.05MB  基本工具
+gdbm
+# GNU database library  0.14MB  基本库   zsh 等需要此库
+gcc-libs
+# Runtime libraries shipped by GCC for C and C++ languages  7.05MB  基本库
+pcre
+# gdbm gcc-libs
+#  A library that implements Perl 5-style regular expressions  2.04MB  zsh glib2依赖于此库
+xz-utils
+# Newer version of lzma-utils   0.44MB   基本工具
+cracklib
+#  Password Checking Library 0.20MB  基本库  (pam需要)
+db
+# The Berkeley DB embedded database system  9.96MB  基本系统 python等依赖于此包
+pam
+# PAM (Pluggable Authentication Modules) library 1.99MB  基本库
+shadow
+# Shadow password file utilities   3.81MB   基本工具
+gmp
+# A free library for arbitrary precision arithmetic 1.38MB
+#coreutils
+# The basic file, shell and text manipulation utilities of the GNU operating system  11.60MB  
+#  基本工具  sysinit udev等依赖于此包
+# 用busybox代替
+perl
+# Practical Extraction and Report Language   38.05MB   automake, git, fvwm等依赖于此包
+openssl
+# The Open Source toolkit for Secure Sockets Layer and Transport Layer Security  7.95MB  xchat python等依赖此包
+libarchive
+# library that can create and read several streaming archive formats  1.10MB
+#libfetch
+# URL based download library  0.18MB 取消此包，选择其分支 libdownload
+#licenses
+# The standard licenses distribution package  0.46MB
+tcp_wrappers
+# Monitors and Controls incoming TCP connections 0.19MB   esound,inetutils,openssh,xinetd依赖于此包
+#vi
+# a highly configurable, improved version of the vi text editor (basic version) 1.15MB
+# 用busybox代替
+#findutils
+# GNU utilities to locate files 1.41MB   mkinitcpio等依赖于此包
+# 用busybox代替
+#gzip
+# GNU compression utility 0.21MB  mkinitcpio等依赖于此包
+# 用busybox代替
+#texinfo
+# Utilities to work with and produce manuals, ASCII text, and on-line documentation from a single source file
+# 2.28MB                  tar time which 等依赖此包
+# tar等用busybox来代替
+gpm
+# A mouse server for the console and xterm 0.40MB  jed links等依赖此包
+#vim
+# a highly configurable, improved version of the vi text editor    29.86MB
+#binutils
+# A set of programs to assemble and manipulate binary and object files  9.91MB 编译需要，被gcc依赖，放到dev模块
+#cpio
+# A tool to copy files into or out of a cpio or tar archive  0.40MB
+# 用busybox代替
+device-mapper
+# Device mapper userspace library and tools   0.97MB
+e2fsprogs
+# Ext2/3/4 filesystem utilities  3.46MB
+libgpg-error
+# Support library for libgcrypt  0.19MB
+libgcrypt
+# a general purpose crypto library based on the code used 0.93MB
+popt
+#  A commandline option parser   0.49MB
+cryptsetup
+# Userspace setup tool for transparent encryption of block devices using the Linux 2.6 cryptoapi
+# 1.15MB
+#dash
+# A POSIX compliant shell that aims to be as small as possible  0.14MB
+filesystem
+# Base filesystem 0.34MB            基本系统，mkinitcpio依赖于此包
+expat
+# An XML Parser library written in C 0.50MB  基本库  python等依赖此库
+dbus-core
+# Freedesktop.org message bus system  1.02MB
+#dcron
+# cron implementation which does not assume that your system is running all the time 0.05MB
+# logrotate 依赖此包
+# 用busybox代替
+#logrotate
+# Rotates system logs automatically  0.09MB
+dhcpcd
+# RFC2131 compliant DHCP client daemon   0.20MB  wicd netcfg依赖于此包
+dialog
+# A tool to display dialog boxes from shell scripts  0.15MB   alsa-utils archlinux-installer依赖此包
+#diffutils
+#  Utility programs used for creating patch files  0.71MB   yaourt 等依赖此包
+# 用busybox代替
+#patch
+# 用busybox代替
+dmapi
+#  Data migration API  0.13MB
+file
+# File type identification utility  2.03MB
+gawk
+# Gnu version of awk  1.97MB
+gen-init-cpio
+# Program to compress initramfs images  0.02MB
+#gettext
+# GNU internationalization library  15.38MB   blender perl-locale-gettext依赖此包 
+grep
+#  A string search utility   0.78MB
+#groff
+# GNU troff text-formatting system 19.04MB   man-db依赖此包
+#man-pages
+# Linux man pages    14.53MB
+#man-pages-zh
+# groff-utf8  An extension of groff that permits to view UTF-8 encoded man pages.
+# Man pages for Chinese  
+#
+#sed
+# GNU stream editor   0.78MB
+# 用busybox代替
+lilo
+#grub
+# A GNU multiboot boot loader 0.55MB
+#grub-gfxmenu
+# A GNU multiboot boot loader with gfxmenu patch from openSUSE
+# grub-gfsmenu依赖于ncurses, 编译依赖于gfxboot等 后者依赖于 perl-html-tagset  perl-html-parser nasm (14.58MB)
+grub-quiet
+# 来自于ubuntu 包含ext4的支持
+hdparm
+# A shell utility for manipulating Linux IDE drive/driver parameters  0.11MB
+kbd
+# Keytable files and keyboard utilities  3.19MB   基本包
+net-tools
+# Configuration tools for Linux networking 0.42MB
+util-linux-ng
+# Miscellaneous system utilities for Linux  5.10MB  基本包  udev sysvinit 依赖于此包
+##################启动相关
+###标准： udev sysvinit  initscripts    ###archinit快速启动: sysvinit archinit-udev-svn archinit-svn-cn
+###Chakra: udev chakra-sysvinit chakra-initscripts
+sysvinit
+# Linux System V Init  0.27MB
+#chakra-sysvinit
+# Linux System V Init, with a patched killall5 to enable omission of specified pids   0.26MB
+udev
+# The userspace dev tools (udev)    0.74MB
+#archinit-udev-svn
+# The userspace dev tools (udev), with ArchInit improvements 0.79MB
+initscripts
+# System initialization/bootup scripts, standard one.  0.10MB 
+#archinit-svn-cn
+#A set of alternative system initialization/bootup programs for improved performance  0.42MB
+#chakra-initscripts
+# System initialization/bootup scripts   0.12MB
+##################
+iputils
+# IP Configuration Utilities (and Ping) 0.22MB
+jfsutils
+# JFS filesystem utilities   0.98MB
+klibc
+# A minimal libc made for early-userspace 15.09MB   基本包
+klibc-extras
+# Extra apps for klibc early-userspace   0.04MB
+klibc-kbd
+# Keytable files and keyboard utilities  0.10MB
+klibc-module-init-tools
+# Utilities for inserting and removing modules from the Linux kernel 0.08MB
+klibc-udev
+# udev compiled for klibc   0.25MB
+mkinitcpio
+# Advanced, modular initramfs image creation utility  0.13MB
+module-init-tools
+# utilities needed by Linux systems for managing loadable kernel modules 0.70MB
+less
+# A terminal based program for viewing text files  0.20MB
+libdownload
+#  URL based download library, forked from libfetch  0.11MB
+libpcap
+# A system-independent interface for user-level packet capture  0.86MB
+libusb
+# Library to enable user space application programs to communicate with USB devices  0.16MB
+lvm2
+# Logical Volume Manager 2 utilities  2.05MB
+lzo2
+# Portable lossless data compression library written in ANSI C  0.49MB
+#mailx
+# A commandline utility for sending email   0.15MB
+#
+mdadm
+# A tool for managing/monitoring Linux md device arrays, also known as Software RAID  0.91MB
+mlocate
+# Faster merging drop-in for slocate  0.41MB
+nano
+# Pico editor clone with enhancements  1.12MB
+pacman-mirrorlist
+# Arch Linux mirror list for use by pacman 0.02MB
+pacman
+# A library-based package manager with dependency support  1.62MB
+pciutils
+# PCI bus configuration space access library and tools 0.87MB
+sysfsutils
+# System Utilities Based on Sysfs  0.16MB
+#pcmciautils
+# Utilities for inserting and removing PCMCIA cards  1.11MB
+ppp
+# A daemon which implements the PPP protocol for dial-up networking 0.82MB
+procinfo
+# Displays useful information from /proc  0.08MB
+procps
+# Utilities for monitoring your system and processes on your system 0.55MB
+psmisc
+# Miscellaneous procfs tools  0.45MB
+reiserfsprogs
+# Reiserfs utilities 1.00MB
+#rp-pppoe
+# Roaring Penguin's Point-to-Point Protocol over Ethernet client 0.23MB
+# Archlive仓里的rp-pppoe-gui已经包含rp-pppoe 所以此处不装
+sdparm
+# An utility similar to hdparm but for SCSI devices  0.20MB
+#syslog-ng
+# Next-generation syslogd with advanced networking and filtering capabilities  1.92MB
+# 用busybox代替
+#tar
+# Utility used to store, backup, and transport files  2.26MB
+# 用busybox代替
+usbutils
+# USB Device Utilities 0.43MB
+#wget
+#  A network utility to retrieve files from the Web  1.32MB   (hwd yaourt依赖于此包)
+# 用busybox代替
+which
+# A utility to show the full path of commands  0.03MB
+libnl
+# Library for applications dealing with netlink sockets 0.47MB
+wpa_supplicant
+# A utility providing key negotiation for WPA wireless networks 0.58MB
+xfsprogs
+# XFS filesystem utilities    2.93MB
+################################################### 以上为base软件组
+# 压缩格式支持
+# 新Arch采用xz-utils取代lzma-utils
+#lzma-utils
+unrar
+#unzip
+# 用busybox代替
+zip
+arj
+lha
+lzop
+p7zip
+# A command-line port of the 7zip compression utility   3.64MB
+cnlocale
+# Archlive定制，中文locale
+wireless_tools
+#
+speedtouch
+# Driver for the ADSL Speed Touch USB modem   0.35MB
+############以下包被hal依赖  (总15.45MB)
+glib2
+# Common C routines used by GTK+ 2.4 and other libs   8.92MB
+dbus-glib
+# GLib bindings for DBUS    0.64MB
+hal-info
+# Hardware Abstraction Layer information files   0.45MB
+#eject
+#  Eject is a program for ejecting removable media under software control   0.22MB
+# 用busybox代替
+dmidecode
+# Desktop Management Interface table related utilities  0.16MB
+libx86
+# Provides an lrmi interface that works on x86, am64 and alpha   0.05MB
+vbetool
+# vbetool uses lrmi in order to run code from the video BIOS  0.06MB
+pm-utils
+# Utilities and scripts for suspend and hibernate power management   0.25MB
+policykit
+# Application development toolkit for controlling system-wide privileges  1.89MB
+consolekit
+# A framework for defining and tracking users, login sessions, and seats 0.48MB
+hal
+#  Hardware Abstraction Layer    
+# 系统休眠相关
+tuxonice-userui
+# TuxOnIce userspace user interface  1.98MB
+# 
+# 系统检测相关
+acpi
+#Linux ACPI client providing battery, AC power, and thermal readings  0.04MB
+#
+laptop-mode-tools
+#Laptop mode is a kernel mode that allows you to extend the battery life of your laptop 0.20MB
+#
+lm_sensors
+# Collection of user space tools for general SMBus access and hardware monitoring.  0.46MB
+smartmontools
+# Control and monitor S.M.A.R.T. enabled ATA and SCSI Hard Drives.  0.49MB
+hddtemp
+# Gives you the temperature of your hard drive by reading S.M.A.R.T. information  0.07MB
+#
+powertop
+# Tool that finds the software that makes your laptop use more power than necessary 0.39MB
+#
+dmraid
+# Device mapper RAID interface  1.13MB
+#lshwd
+# lists hardware and approp modules
+#
+hwdetect
+# Hardware detection script with loading modules and mkinitcpio.conf / rc.conf support
+#
+bc
+# An arbitrary precision calculator language  0.23MB  chakra-hardware-detection: 要求 bc
+# 分区、文件系统相关支持
+fuse
+ntfs-3g
+dosfstools
+progsreiserfs
+ntfsprogs
+#
+#sshfs
+#sqlite3 heimdal openssh 
+# FUSE client based on the SSH File Transfer Protocol. 10.49MB
+#
+#  文件系统检测等
+#fam
+#portmap
+# File Alteration Monitor - used by KDE, GNOME and others  0.33MB
+gamin
+# Gamin is a file and directory monitoring system defined to be a subset of the FAM (File Alteration Monitor) system.
+#    0.16MB
+#
+######################## 基本网络配置工具
+xinetd
+# xinetd is a secure replacement for inetd 0.25MB
+#
+netkit-bsd-finger
+# bsd-finger ported to Linux    0.09MB
+#
+dhclient
+# dhclient is standalone client from the dhcp package   0.48MB
+#
+ethtool
+# gkernel ethtool   0.11MB
+#
+inetutils
+# A collection of common network programs  0.62MB
+linux-atm
+iproute2
+netcfg
+#依赖于 wireless_tools linux-atm iproute2
+# Network configuration and profile scripts    0.17MB
+# Dr.COM认证程序
+#drcom
+#
+##################### live 系统必须工具
+# syslinux 依赖于  (3.52MB)
+xproto
+libice
+libsm
+mtools
+syslinux
+#依赖于xproto  libice  libsm mtools
+#dvd+rw-tools
+#
+#cdrdao
+# 依赖于 lame libmad libogg libvorbis alsa-lib libao
+# Records audio/data CD-Rs in disk-at-once (DAO) mode  7.15MB
+# 用mkarchlive制作archlive需要此包
+#
+#################### 基本命令行工具
+#zsh
+# A very advanced and programmable command interpreter (shell) for UNIX   6.94MB
+#time
+# 用busybox代替
+tree
+sudo
+htop
+parted
+#vim
+# a highly configurable, improved version of the vi text editor   29.86MB
+#
+pmount
+# mount removable devices as normal user  0.44MB
+#
+#mc
+# mc 命令行界面的资源管理软件 8.25MB 依赖于slang
+#screen
+# Full-screen window manager that multiplexes a physical terminal  0.82MB
+#
+links
+# A text WWW browser, similar to Lynx   1.04MB
+rsync
+# A file transfer program to keep remote files in sync  0.48MB
+glib
+xdelta
+# 依赖于 glib
+# Used to identify differences between files similar to rsync  0.99MB
+#
+#lftp
+# 依赖于 libtash1 gnutls   总7.75MB
+# Sophisticated command line based FTP client   1.29MB
+#aif
+#The ArchLinux Installation Framework  0.25MB
+#
