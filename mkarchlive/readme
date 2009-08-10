@@ -1,0 +1,18 @@
+1、取得脚本
+   hg clone http://archlive.googlecode.com/hg
+   archlive/archliveinstaller  为archlive安装程序——支持定义软件清单快速安装和复制archlive到硬盘快速安装
+   archlive/mkarchlive  为基于Arch GNU/Linux的live系统的定制脚本
+   archlive/QI   快速安装脚本 ——将合并到archliveinstaller
+   archlive/repo-tools  软件仓维护工具
+
+2、DIY archlive 直通车
+   获取到mkarchlive制作脚本后
+   cd mkarchlive && (sudo sh ./mkarchlive -f all /archlive | tee ./log)
+   (以上脚本解释：进入到mkarchlive目录, 并以root身份运行mkarchlive, 制作archlive的临时工作目录及成品存放目录均在/archlive目录下， 将制作的所有日志存储于mkarchlive目录下的log中）
+
+3、DIY archlive 高级
+   自定义配置文件 mkarchlive/profiles/archlive/config 存储关于自定义软件仓、自定义软件清单、自定义主题、添加附加字体等
+   A. 自定义软件包、自定义软件仓
+   B. 自定义软件清单
+   C. 修改mkarchlive/profiles/archlive/overlay文件夹下内容个性化定制
+

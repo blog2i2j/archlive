@@ -1,4 +1,12 @@
 #Archlive定制配置文件
+
+#模块压缩方式
+#zip-mode=1 #采用squashfs3 标准压缩
+#zip-mode=2 #采用squashfs3+lzma模式压缩
+zip-mode=3 #采用squashfs4 压缩
+# 对应模式的squashfs文件系统内核模块软件包必须包含于目标系统的软件清单中(修改0_000_core.list加入)
+
+# 目标系统所装内核的版本文件位置，如果使用官方内核及archlive内核则不可改以下变量
 KERNEL="/etc/mkinitcpio.d/kernel26.kver"
 
 # 模块清单文件夹
