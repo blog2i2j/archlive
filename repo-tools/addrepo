@@ -127,13 +127,6 @@ custom_repo ()
     rm -rf ${REPO_DIR}/${REPO_NAME}.db.tar.gz.old
 }
 
-# 上传到googlecode的python脚本
-if [ ! -f $(pwd)/googlecode_upload.py ]; then
-	wget -q http://support.googlecode.com/svn/trunk/scripts/googlecode_upload.py
-	chmod +x $(pwd)/googlecode_upload.py
-fi
-UPLOADPROG="$(pwd)/googlecode_upload.py"
-
 # 列出已经上传googlecode项目的文件
 list_in_project ()
 {
@@ -185,6 +178,14 @@ _upload ()
 		error "必须指定预上传的googlecode项目名、用户名及密码"
 		usage 1
     fi
+
+	# 上传到googlecode的python脚本
+	if [ ! -f $(pwd)/googlecode_upload.py ]; then
+		wget -q http://support.googlecode.com/svn/trunk/scripts/googlecode_upload.py
+		chmod +x $(pwd)/googlecode_upload.py
+	fi
+	UPLOADPROG="$(pwd)/googlecode_upload.py"
+
     info "正将自定义软件仓${REPO_DIR}下的文件，以用户${UserName}身份上传到googlecode项目${Project_Name}"
     list_in_project ${Project_Name} $(pwd)/old.list
     for file in $(ls ${REPO_DIR}); do
