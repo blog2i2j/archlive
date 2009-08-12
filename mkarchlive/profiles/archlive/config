@@ -38,9 +38,26 @@ FORCE="n"
 # 目标系统所装内核的版本文件位置，如果使用官方内核及archlive内核则不可改以下变量
 KERNEL="/etc/mkinitcpio.d/kernel26.kver"
 
+# 主要定制内容
+# ==============================================================
+# 定制archlive主要在以下软件清单中做文章：
+# 1、通过MODULES定制需要包含的模块，archlive提供的软件清单分级别如下：
+#    0级：最基础模块;
+#    1级：命令行应用程序;
+#    2级：基本X模块，包含小型桌面环境、xorg等
+#    3级：常用X程序及库
+#    4级：独立X应用程序模块
+#    5级：中、大型桌面环境
+#    ...
+# 2、通过定义模块软件清单来定制
+#    软件清单中，如果属于archlive archlive-pkg的定制包或者编译包或者定制编译包都有特别注明
+# 3、如果定制的软件清单中的部分软件包在官方库里面没有，则通过自定义软件仓来解决
+#
+
 # 模块清单文件夹
 LISTDIR="list"
 #LISTDIR="list list28 list29"
+
 # 模块清单   默认在list文件夹中读取
 MODULES="0_000_core
 0_001_base
@@ -64,7 +81,6 @@ MODULES="0_000_core
 5_009_kdemod
 5_compiz-icon"
 
-
 # 自定义软件仓
 #REPO=/mnt/sda3/cpkg
 #REPO_Name=archlive
@@ -77,13 +93,14 @@ DELDIR="usr/share/doc usr/share/devhelp usr/share/gtk-doc usr/share/wallpapers"
 # 模块化文件下载地址
 TGZURL="http://archlive.googlecode.com/files/"
 
+# 个性化定制
+# =========================================================
 #是否使用overlay来个性化定制——主要是个人配置，特别程序等
 Use_Overlay="y"
 #Use_Overlay="n"
 
 # Use_Overlay="n"时以下定制将无效
 
-# 个性化定制
 # 预装主题、图标、鼠标指针、附加字体等
 # 主题文件包名称  **-theme.tgz
 THEME="mac4lin"
