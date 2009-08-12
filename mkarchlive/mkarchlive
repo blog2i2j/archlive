@@ -7,6 +7,7 @@
 # 打包放在http://archlive.googlecode.com/files/中
 # 脚本运行的时候会先自动下载部分配置文件。。。
 #
+# 2009-08-12 将是否采用overlay个性化定制目录设置放于config中
 # 2009-08-10 修改运行目录结构，并将模块压缩方式的选择放到配置文件中
 # 2009-08-10 修改判断软件仓是否已经在pacman.conf中定义的判断方式
 #
@@ -44,7 +45,7 @@ usage ()
     echo "    -v               运行输出结果."
     echo "    -h               本帮助信息."
     echo " 命令:"
-    echo "     prepare                 : 准备iso根目录结构及overlay"
+    echo "     prepare                 : 准备iso根目录结构及overlay(如果选择需要overlay，在config中配置)"
     echo "     install <工作目录>        : 将程序安装到工作目录下"
     echo "     squash <工作目录>         : 从指定的目录创建squash模块"
     echo "     imgprepare <工作目录>     : 从指定的目录制作archlive启动内核模块及基本模块等"
@@ -53,30 +54,30 @@ usage ()
     exit $1
 }
 
+# 装载archlive的配置文件
+if [ -f ${PROFILE_DIR}/config ]; then
+    . ${PROFILE_DIR}/config
+fi
+
 START_DIR=$(pwd)
-PROFILE_DIR="${START_DIR}/profiles/archlive"
+PROFILE_DIR="${START_DIR}/${PROFILE_DIR}"
 LIVELINUX="${START_DIR}/linux-live/archlive"
 MKINITCPIO="${START_DIR}/mkinitcpio/mkinitcpio"
 PACMAN="pacman"
 REPO_ADD="${START_DIR}/../repo-tools/repo-add"
 CPIOCONFIG="${PROFILE_DIR}/archlive-mkinitcpio.conf"
-CACHE="/var/cache/pacman/pkg"
 EXTRAPACKAGEDIR="${PROFILE_DIR}/packages"
 ROOT_MOD="$(ls -1 ${PROFILE_DIR}/$LISTDIR | head -1)"
 PKGLIST=""
-QUIET="y"
-FORCE="n"
-CDNAME="archlive"
-IMG_TYPE="iso"
-DELDIR=""
-BOOT=""
-PUBLISHER="http://archlive.googlecode.com/"
-AUTHOR="Carbon Jiao"
 
-# 装载archlive的配置文件
-if [ -f ${PROFILE_DIR}/config ]; then
-    . ${PROFILE_DIR}/config
-fi
+# 如果config没有定义则采用如下默认配置
+if [ "x$QUIET" = "x" ]; then QUIET="y"; fi
+if [ "x$FORCE" = "x" ]; then FORCE="y"; fi
+if [ "x$CDNAME" = "x" ]; then CDNAME="archlive"; fi
+if [ "x$CACHE" = "x" ]; then CACHE="/var/cache/pacman/pkg"; fi
+if [ "x$PUBLISHER" = "x" ]; then PUBLISHER="http://archlive.googlecode.com/"; fi
+if [ "x$AUTHOR" = "x" ]; then AUTHOR="Carbon Jiao"; fi
+if [ "x$IMG_TYPE" = "x" ]; then IMG_TYPE="iso"; fi
 
 # 检测模块压缩模式
 case ${zip-mode} in 
@@ -142,8 +143,11 @@ esac
 
 if [ "x${BOOT}" = "x" ]; then BOOT="syslinux"; fi
 
-[ "x${work_dir}" = "x" ] && (warn "必须指定工作目录" && usage 1)
-if [ "x${imgname}" = "x" ]; then imgname="$work_dir/archlive-$(date +%F).iso"; fi
+if [ "x${work_dir}" = "x" ]; then 
+	warn "没有指定工作目录，采用默认设置"
+	work_dir="/$(date +%m%d)"
+fi
+if [ "x${imgname}" = "x" ]; then imgname="${work_dir}/archlive-$(date +%F).iso"; fi
 
 #archlive最终软件清单
 PKGFILE="$work_dir/packages.list"
@@ -215,6 +219,75 @@ add_customrepo2pacmanconf ()
    echo "将自定义软件仓加入${PACMANCONF}完成"
 }
 
+prepare_overlay (){
+
+	info "准备Archlive 系统配置文件目录overlay"
+	if [ ! -d ${PROFILE_DIR}/overlay ]; then 
+		if [ ! -f overlay.tgz ]; then
+			echo "下载Archlive附加配置文件overlay.tgz"
+			wget -q "${TGZURL}/overlay.tgz"  &> /dev/null
+		fi
+		echo "释放Archlive附加配置文件overlay.tgz"
+		tar -xzvpf overlay.tgz -C ${PROFILE_DIR}   &> /dev/null
+    	fi
+    	OVERLAY=${PROFILE_DIR}/overlay
+    	echo "将主题、图标、鼠标指针文件及字体等放在overlay模块中..."
+    	if [ -d ${OVERLAY}/usr/share/themes ]; then
+	 	rm -rf ${OVERLAY}/usr/share/themes
+	 	mkdir -p ${OVERLAY}/usr/share/themes
+    	else
+	 	mkdir -p ${OVERLAY}/usr/share/themes
+    	fi
+    	for theme in ${THEME}; do 
+       		if [ ! -f "${theme}-theme.tgz" ]; then
+	    		echo "下载主题包文件${theme}-theme.tgz"
+            		wget -q "${TGZURL}/${theme}-theme.tgz"  &> /dev/null
+       		fi
+		echo "释放主题包${theme}-theme.tgz"
+       		tar -xzvpf "${theme}-theme.tgz" -C "${OVERLAY}/usr/share/themes/"   &> /dev/null
+        done
+
+    	if [ ! -d ${OVERLAY}/usr/share/icons ]; then
+		mkdir -p ${OVERLAY}/usr/share/icons
+    	fi
+    	for icon in ${ICON}; do 
+       		if [ ! -f "${icon}-icons.tgz" ]; then
+	   		 echo "下载图标文件${icon}-icons.tgz"
+          	wget -q "${TGZURL}/${icon}-icons.tgz"  &> /dev/null
+       		fi
+	 	echo "释放图标文件包${icon}-icons.tgz"
+       		tar -xzvpf "${icon}-icons.tgz" -C "${OVERLAY}/usr/share/icons/"  &> /dev/null
+    	done
+
+    	for cursor in ${CURSOR}; do 
+       		if [ ! -f "${cursor}-cursor.tgz" ]; then
+	    		echo "下载鼠标指针文件包${cursor}-cursor.tgz"
+          		wget -q "${TGZURL}/${cursor}-cursor.tgz"  &> /dev/null
+       		fi
+	 	echo "释放鼠标指针文件包${cursor}-cursor.tgz"
+       		tar -xzvpf "${cursor}-cursor.tgz" -C "${OVERLAY}/usr/share/icons/"  &> /dev/null
+    	done
+
+    	for font in ${EXTRAFONTS}; do 
+       		if [ ! -f "${font}-font.tgz" ]; then
+	    		echo "下载附加字体包文件${font}-font.tgz"
+          		wget -q "${TGZURL}/${font}-font.tgz"  &> /dev/null
+       		fi
+	 	echo "释放附加字体包${font}-font.tgz"
+       		tar -xzvpf "${font}-font.tgz" -C "${OVERLAY}/usr/share/fonts/TTF/"  &> /dev/null
+    	done
+
+    	if [ -d "${OVERLAY}/home/arch" ]; then
+            chown -R arch:users "${OVERLAY}/home/arch"
+            chmod -R 700 "${OVERLAY}/home/arch"
+    	fi
+    	chown -R root:root "${OVERLAY}/root"
+    	chmod -R 700 "${OVERLAY}/root"
+
+    	find "${OVERLAY}" -name ".svn" -type d > exclude
+    	rm exclude
+    	info "overlay准备完毕"
+}
 command_prepare (){
 
     if [  "x$REPO_Name" != "x" -a "x$REPO" != "x" ]; then
@@ -235,73 +308,12 @@ command_prepare (){
     fi
     CDROOT="${PROFILE_DIR}/cd-root"
 
-    info "准备Archlive 系统配置文件目录overlay"
-
-    if [ ! -d ${PROFILE_DIR}/overlay ]; then 
-	if [ ! -f overlay.tgz ]; then
-		echo "下载Archlive附加配置文件overlay.tgz"
-		wget -q "${TGZURL}/overlay.tgz"  &> /dev/null
-	fi
-	echo "释放Archlive附加配置文件overlay.tgz"
-	tar -xzvpf overlay.tgz -C ${PROFILE_DIR}   &> /dev/null
-    fi
-    OVERLAY=${PROFILE_DIR}/overlay
-    echo "将主题、图标、鼠标指针文件及字体等放在overlay模块中..."
-    if [ -d ${OVERLAY}/usr/share/themes ]; then
-	 rm -rf ${OVERLAY}/usr/share/themes
-	 mkdir -p ${OVERLAY}/usr/share/themes
+    if [ "${Use_Overlay}" = "y" ]; then
+	prepare_overlay
     else
-	 mkdir -p ${OVERLAY}/usr/share/themes
+	[ -d ${PROFILE_DIR}/overlay ] && rm -rf ${PROFILE_DIR}/overlay
     fi
-    for theme in ${THEME}; do 
-       if [ ! -f "${theme}-theme.tgz" ]; then
-	    echo "下载主题包文件${theme}-theme.tgz"
-          wget -q "${TGZURL}/${theme}-theme.tgz"  &> /dev/null
-       fi
-	 echo "释放主题包${theme}-theme.tgz"
-       tar -xzvpf "${theme}-theme.tgz" -C "${OVERLAY}/usr/share/themes/"   &> /dev/null
-    done
 
-    if [ ! -d ${OVERLAY}/usr/share/icons ]; then
-		mkdir -p ${OVERLAY}/usr/share/icons
-    fi
-    for icon in ${ICON}; do 
-       if [ ! -f "${icon}-icons.tgz" ]; then
-	    echo "下载图标文件${icon}-icons.tgz"
-          wget -q "${TGZURL}/${icon}-icons.tgz"  &> /dev/null
-       fi
-	 echo "释放图标文件包${icon}-icons.tgz"
-       tar -xzvpf "${icon}-icons.tgz" -C "${OVERLAY}/usr/share/icons/"  &> /dev/null
-    done
-
-    for cursor in ${CURSOR}; do 
-       if [ ! -f "${cursor}-cursor.tgz" ]; then
-	    echo "下载鼠标指针文件包${cursor}-cursor.tgz"
-          wget -q "${TGZURL}/${cursor}-cursor.tgz"  &> /dev/null
-       fi
-	 echo "释放鼠标指针文件包${cursor}-cursor.tgz"
-       tar -xzvpf "${cursor}-cursor.tgz" -C "${OVERLAY}/usr/share/icons/"  &> /dev/null
-    done
-
-    for font in ${EXTRAFONTS}; do 
-       if [ ! -f "${font}-font.tgz" ]; then
-	    echo "下载附加字体包文件${font}-font.tgz"
-          wget -q "${TGZURL}/${font}-font.tgz"  &> /dev/null
-       fi
-	 echo "释放附加字体包${font}-font.tgz"
-       tar -xzvpf "${font}-font.tgz" -C "${OVERLAY}/usr/share/fonts/TTF/"  &> /dev/null
-    done
-
-    if [ -d "${OVERLAY}/home/arch" ]; then
-            chown -R arch:users "${OVERLAY}/home/arch"
-            chmod -R 700 "${OVERLAY}/home/arch"
-    fi
-    chown -R root:root "${OVERLAY}/root"
-    chmod -R 700 "${OVERLAY}/root"
-
-    find "${OVERLAY}" -name ".svn" -type d > exclude
-    rm exclude
-    info "overlay准备完毕"
 }
 command_install () {
 
@@ -523,7 +535,7 @@ command_squash () {
 	mksquash ${moduledir}/ -noappend ${OPTION}
     fi
 
-    if [  -d ${PROFILE_DIR}/overlay ]; then 
+    if [  "${Use_Overlay} = "y" ] && [ -d ${PROFILE_DIR}/overlay ]; then 
 	info "创建附加设置模块overlay.${EXT}..."
 	OVERLAY="${PROFILE_DIR}/overlay"
 	if [ "${QUIET}" = "y" ]; then

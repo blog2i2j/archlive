@@ -7,8 +7,8 @@
 
 2、DIY archlive 直通车
    获取到mkarchlive制作脚本后
-   cd mkarchlive && (sudo sh ./mkarchlive -f all /archlive | tee ./log)
-   (以上脚本解释：进入到mkarchlive目录, 并以root身份运行mkarchlive, 制作archlive的临时工作目录及成品存放目录均在/archlive目录下， 将制作的所有日志存储于mkarchlive目录下的log中）
+   cd mkarchlive && (sudo sh ./mkarchlive | tee ./log)
+   (以上脚本解释：进入到mkarchlive目录, 并以root身份运行mkarchlive, 制作archlive的临时工作目录及成品存放目录均在/YYDD 目录(config文件定义)下， 将制作的所有日志存储于mkarchlive目录下的log中）
 
 3、DIY archlive 高级
    自定义配置文件 mkarchlive/profiles/archlive/config 存储关于自定义软件仓、自定义软件清单、自定义主题、添加附加字体等
@@ -16,3 +16,13 @@
    B. 自定义软件清单
    C. 修改mkarchlive/profiles/archlive/overlay文件夹下内容个性化定制
 
+4、定制参数优先级
+   命令行输入参数 > config定义参数 > 默认参数
+   (以上优先级针对同一参数在多次定义时)
+
+5、制作完成后清理
+   直接删除工作目录就可以了
+   如果在制作过程中因为某些原因出现错误而终止或者Ctrl+C结束mkarchlive的执行，要删除工作目录必须先卸载挂载于工作目录/union下的aufs文件系统，比如工作目录为 /archlive  则要 sudo umount /archlive/union && sudo rm -rf /archlive 来删除工作目录
+
+6、To Do:
+   使该脚本支持运行于任何linux系统

@@ -1,10 +1,39 @@
 #Archlive定制配置文件
 
+CDNAME="archlive"
+IMG_TYPE="iso"
+
+# 目标镜像引导程序类型 syslinux grub grub-gfx可选 （ToDo: 加入grub2...)
+BOOT="syslinux"
+
+PUBLISHER="http://archlive.googlecode.com/"
+AUTHOR="Carbon Jiao"
+
+# 制作基于Arch的live系统的配置文件及文件夹(config list pacman.conf等)相对mkarchlive存放位置
+PROFILE_DIR=profiles/archlive
+
+# 制作archlive过程中下载的软件包存放位置
+CACHE="/var/cache/pacman/pkg"
+
+# 制作archlive的临时工作目录——目标镜像也放在该目录下，确保有足够空间
+work_dir="/$(date +%m%d)"
+# 以上设置将工作目录设置为  /月日  比如 今天8月12日，则为 /08112
+
+#目标镜像名称
+imgname="${work_dir}/archlive-$(date +%F).iso"
+
 #模块压缩方式
 #zip-mode=1 #采用squashfs3 标准压缩
 #zip-mode=2 #采用squashfs3+lzma模式压缩
 zip-mode=3 #采用squashfs4 压缩
 # 对应模式的squashfs文件系统内核模块软件包必须包含于目标系统的软件清单中(修改0_000_core.list加入)
+
+# 静态制作，比如mksquashfs不输出状态信息等
+QUIET="y"
+
+# 是否强制覆盖——如果工作目录已经存在是否覆盖制作archlive
+# 此处不设置的话，mkarchlive脚本会自动设置为强制覆盖
+FORCE="n"
 
 # 目标系统所装内核的版本文件位置，如果使用官方内核及archlive内核则不可改以下变量
 KERNEL="/etc/mkinitcpio.d/kernel26.kver"
@@ -47,6 +76,13 @@ DELDIR="usr/share/doc usr/share/devhelp usr/share/gtk-doc usr/share/wallpapers"
 
 # 模块化文件下载地址
 TGZURL="http://archlive.googlecode.com/files/"
+
+#是否使用overlay来个性化定制——主要是个人配置，特别程序等
+Use_Overlay="y"
+#Use_Overlay="n"
+
+# Use_Overlay="n"时以下定制将无效
+
 # 个性化定制
 # 预装主题、图标、鼠标指针、附加字体等
 # 主题文件包名称  **-theme.tgz
