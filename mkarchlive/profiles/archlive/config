@@ -114,3 +114,6 @@ CURSOR=""
 #附加字体包 **-font.tgz
 EXTRAFONTS=""
 #EXTRAFONTS="iYaHei yahei"
+
+# 下载后是否删除源文件 overlay.tgz cd-root.tgz等
+DELETE_TGZ="y"
