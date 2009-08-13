@@ -7,11 +7,13 @@
 # 打包放在http://archlive.googlecode.com/files/中
 # 脚本运行的时候会先自动下载部分配置文件。。。
 #
+# 2009-08-13 检误，并智能化检测、判断制作配置文件config
 # 2009-08-12 将是否采用overlay个性化定制目录设置放于config中
 # 2009-08-10 修改运行目录结构，并将模块压缩方式的选择放到配置文件中
 # 2009-08-10 修改判断软件仓是否已经在pacman.conf中定义的判断方式
 #
 APPNAME=$(basename "${0}")
+START_DIR=$(pwd)
 
 error () { echo -e "\033[1;31;40m!!!错误 \033[1;37;40m$@\033[1;0m"; }
 warn ()  { echo -e "\033[1;33;40m***警告 \033[1;37;40m$@\033[1;0m"; }
@@ -31,21 +33,23 @@ fi
 # usage: usage <exitvalue>
 usage ()
 {
-    echo " usage ${APPNAME} [选项] 命令 <命令选项>"
     echo " 本制作程序须用管理员身份或者sudo来执行，须要aufs文件系统的支持，同时有cdrkit等软件"
+    echo " 请确保archlive制作配置文件config存放位置与config中指定的PROFILE_DIR一致"
+    echo ""
+    echo " usage ${APPNAME} [选项] 命令 <命令选项>"
     echo " 一般选项:"
     echo "    -f               强制覆盖现有的工作目录等，全部重新制作"
-    echo "    -i CPIO_CONFIG   用CONFIG 作为archlive启动内核配置文件. 默认: ${CPIOCONFIG}"
-    echo "    -c CDNAME        liblinuxlive脚本默认文件夹名. 默认: archlive"
-    echo "    -b BOOT		启动选项(syslinux,grub,grub-gfx)"
-    echo "    -M MODULES       livecd的模块. 默认: ${MODULES}"
+    echo "    -i CPIO_CONFIG   用CONFIG 作为archlive启动内核配置文件. "
+    echo "    -c CDNAME        目标镜像名. 默认: archlive"
+    echo "    -b BOOT	     启动选项(syslinux,grub,grub-gfx)"
+    echo "    -M MODULES       livecd的模块. "
     echo "    -m MODULESCOPY   从指定的文件夹拷贝附加模块，比如程序模块等. 默认: 无"
     echo "    -a ADDON_DIR     从指定文件夹制作附加设置模块. 默认: 无"
     echo "    -t <iso,disk>    目标镜像类型. 默认iso."
     echo "    -v               运行输出结果."
     echo "    -h               本帮助信息."
     echo " 命令:"
-    echo "     prepare                 : 准备iso根目录结构及overlay(如果选择需要overlay，在config中配置)"
+    echo "     prepare   : 准备iso根目录结构及overlay(如果选择需要overlay，在config中配置)"
     echo "     install <工作目录>        : 将程序安装到工作目录下"
     echo "     squash <工作目录>         : 从指定的目录创建squash模块"
     echo "     imgprepare <工作目录>     : 从指定的目录制作archlive启动内核模块及基本模块等"
@@ -54,12 +58,21 @@ usage ()
     exit $1
 }
 
-# 装载archlive的配置文件
-if [ -f ${PROFILE_DIR}/config ]; then
-    . ${PROFILE_DIR}/config
+# 根据配置文件config存放位置与config中PROFILE_DIR定义的值是否一致来判断查找到的配置文件是否是正确
+config_is_right () {
+	case "${CONFIG_FILE}" in ./${PROFILE_DIR}/config) return 0;; esac
+	return 1
+}
+
+# 装载archlive的配置文件, 从当前目录查看是否存在config，存在即调用之
+CONFIG_FILE=`find . -name "config"`
+. ${CONFIG_FILE}
+if config_is_right; then
+	echo "载入archlive制作配置文件${CONFIG_FILE}"
+else
+	echo "配置文件config不唯一或者其存放位置与config中定义的不一致" && usage 1
 fi
 
-START_DIR=$(pwd)
 PROFILE_DIR="${START_DIR}/${PROFILE_DIR}"
 LIVELINUX="${START_DIR}/linux-live/archlive"
 MKINITCPIO="${START_DIR}/mkinitcpio/mkinitcpio"
@@ -80,7 +93,7 @@ if [ "x$AUTHOR" = "x" ]; then AUTHOR="Carbon Jiao"; fi
 if [ "x$IMG_TYPE" = "x" ]; then IMG_TYPE="iso"; fi
 
 # 检测模块压缩模式
-case ${zip-mode} in 
+case ${zip_mode} in 
 	1) MKSQUASHFS="${START_DIR}/squashfs3/mksquashfs"
 	   EXT="sqfs"
 	   OPTION="-nolzma"
@@ -125,11 +138,9 @@ PKGLIST="$(echo $MODULES)"
 shift $(($OPTIND - 1))
 echo "参数: $@"
 
-[ $# -le 1 ] && usage 1
+#[ $# -le 1 ] && usage 1
 
 command_name="${1}"
-work_dir=""
-imgname=""
 
 case "${command_name}" in
     prepare) ;;
@@ -143,9 +154,13 @@ esac
 
 if [ "x${BOOT}" = "x" ]; then BOOT="syslinux"; fi
 
+if [ "x${work_dir}" = "x" ]; then
+	. ${CONFIG_FILE}
+	info "采用config中设置的临时工作目录${work_dir}"
+fi
 if [ "x${work_dir}" = "x" ]; then 
-	warn "没有指定工作目录，采用默认设置"
 	work_dir="/$(date +%m%d)"
+	warn "没有指定工作目录，采用默认设置${work_dir}"
 fi
 if [ "x${imgname}" = "x" ]; then imgname="${work_dir}/archlive-$(date +%F).iso"; fi
 
@@ -153,6 +168,7 @@ if [ "x${imgname}" = "x" ]; then imgname="${work_dir}/archlive-$(date +%F).iso";
 PKGFILE="$work_dir/packages.list"
 
 info "${APPNAME} : 程序设置"
+echo "         Archlive定制配置文件:    ${CONFIG_FILE}"
 echo " Archlive启动内核镜像配置文件:   ${CPIOCONFIG}"
 echo "    pacman.conf文件:   ${PACMANCONF}"
 echo "                         启动程序:   ${BOOT}"
@@ -310,17 +326,20 @@ command_prepare (){
 
     if [ "${Use_Overlay}" = "y" ]; then
 	prepare_overlay
-    else
-	[ -d ${PROFILE_DIR}/overlay ] && rm -rf ${PROFILE_DIR}/overlay
+#  如果config里面定义Use_Overlay=n，需要删除PROFILE_DIR下的overlay(如果存在)则取消如下两行的注释
+#    else
+#	[ -d ${PROFILE_DIR}/overlay ] && rm -rf ${PROFILE_DIR}/overlay
     fi
 
+    # 删除下载的 tgz文件
+    [ "$DELETE_TGZ" = "y" ] && rm -f ${START_DIR}/*.tgz
 }
 command_install () {
 
     info "开始进行Archlive的制作..."
     if [ -e "${work_dir}" -a "${FORCE}" = "n" ]; then
         error "错误: 工作目录'${work_dir}'已经存在 , 退出."
-        error "       加入 -f 参数覆盖现有安装目录"
+        error "       加入 -f 参数或者config中设置FORCE="y"来覆盖现有安装目录"
         exit 1
     fi
     mkdir -p "${IMGROOT}"
@@ -535,7 +554,7 @@ command_squash () {
 	mksquash ${moduledir}/ -noappend ${OPTION}
     fi
 
-    if [  "${Use_Overlay} = "y" ] && [ -d ${PROFILE_DIR}/overlay ]; then 
+    if [ "${Use_Overlay}" = "y" ] && [ -d "${PROFILE_DIR}/overlay" ]; then 
 	info "创建附加设置模块overlay.${EXT}..."
 	OVERLAY="${PROFILE_DIR}/overlay"
 	if [ "${QUIET}" = "y" ]; then
@@ -552,7 +571,7 @@ command_squash () {
 
 command_imgprepare () {
 
-	info "创建基本模块archlive.sqfs (命令位置默认${LIVELINUX}/initrd_create)"
+	info "创建基本模块archlive.sqfs——命令位置默认${LIVELINUX}/initrd_create"
 
 	sh ${LIVELINUX}/initrd_create ${CDNAME}
 	mv -f ${LIVELINUX}/${CDNAME}.sqfs "${IMGROOT}/${CDNAME}/archlive.sqfs"
@@ -620,7 +639,7 @@ command_img () {
 		mkdir -p "${IMGROOT}/boot/grub"
 		cp -r /usr/lib/grub/i386-pc/* "${IMGROOT}/boot/grub"    
 		bootflags="-b boot/grub/stage2_eltorito"
-	elif [ "$BOOT" = "syslinux" ] || [ "$BOOT" = "isolinux" ]; then
+	elif [ "$BOOT" = "syslinux" -o "$BOOT" = "isolinux" ]; then
 		if ! pacman -Qi syslinux >/dev/null 2>&1; then
 			error "宿主系统不存在$BOOT. 无法继续!"
 			exit 1

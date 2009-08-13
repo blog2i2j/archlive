@@ -23,9 +23,9 @@ work_dir="/$(date +%m%d)"
 imgname="${work_dir}/archlive-$(date +%F).iso"
 
 #模块压缩方式
-#zip-mode=1 #采用squashfs3 标准压缩
-#zip-mode=2 #采用squashfs3+lzma模式压缩
-zip-mode=3 #采用squashfs4 压缩
+#zip_mode=1 #采用squashfs3 标准压缩
+#zip_mode=2 #采用squashfs3+lzma模式压缩
+zip_mode=3 #采用squashfs4 压缩
 # 对应模式的squashfs文件系统内核模块软件包必须包含于目标系统的软件清单中(修改0_000_core.list加入)
 
 # 静态制作，比如mksquashfs不输出状态信息等
@@ -33,6 +33,7 @@ QUIET="y"
 
 # 是否强制覆盖——如果工作目录已经存在是否覆盖制作archlive
 # 此处不设置的话，mkarchlive脚本会自动设置为强制覆盖
+#FORCE="y"
 FORCE="n"
 
 # 目标系统所装内核的版本文件位置，如果使用官方内核及archlive内核则不可改以下变量
@@ -82,8 +83,8 @@ MODULES="0_000_core
 5_compiz-icon"
 
 # 自定义软件仓
-#REPO=/mnt/sda3/cpkg
-#REPO_Name=archlive
+#REPO="/mnt/sda3/cpkg"
+#REPO_Name="archlive"
 
 # 附加软件包清单
 PKGLIST=""
