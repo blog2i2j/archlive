@@ -7,9 +7,9 @@
 
 2、DIY archlive 直通车
    获取到mkarchlive制作脚本后
-   cd mkarchlive && (sudo sh ./mkarchlive all | tee ./log)
+   cd mkarchlive && (sudo sh ./mkarchlive all 2>&1 | tee ./log)
    (以上脚本解释：进入到mkarchlive目录, 并以root身份运行mkarchlive, 制作archlive的临时工作目录及成品存放目录均在/YYDD 目录(config文件定义)下， 并将制作日志存储于mkarchlive目录下的log中）
-   如果不希望看到跳动的输出，可以将以上命令中的 " | tee ./log "改成 "2>&1 > ./log" 即可“安静”地运行了！
+   如果不希望看到跳动的输出，可以将以上命令中的 " | tee ./log "改成 "> ./log" 即可“安静”地运行了！
 
 3、DIY archlive 高级
    通过以下三种途径来定制：
