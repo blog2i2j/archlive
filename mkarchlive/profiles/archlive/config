@@ -74,6 +74,7 @@ MODULES="0_000_core
 4_opera
 4_printer
 4_skype
+4_vim
 4_virtualbox
 4_wine
 5_006_e17_svn

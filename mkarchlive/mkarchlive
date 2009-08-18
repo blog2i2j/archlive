@@ -13,7 +13,6 @@
 # 2009-08-10 修改判断软件仓是否已经在pacman.conf中定义的判断方式
 #
 APPNAME=$(basename "${0}")
-START_DIR=$(pwd)
 
 error () { echo -e "\033[1;31;40m!!!错误 \033[1;37;40m$@\033[1;0m"; }
 warn ()  { echo -e "\033[1;33;40m***警告 \033[1;37;40m$@\033[1;0m"; }
@@ -49,7 +48,7 @@ usage ()
     echo "    -v               运行输出结果."
     echo "    -h               本帮助信息."
     echo " 命令:"
-    echo "     prepare   : 准备iso根目录结构及overlay(如果选择需要overlay，在config中配置)"
+    echo "     prepare                   : 准备iso根目录结构及overlay(如果选择需要overlay，在config中配置)"
     echo "     install <工作目录>        : 将程序安装到工作目录下"
     echo "     squash <工作目录>         : 从指定的目录创建squash模块"
     echo "     imgprepare <工作目录>     : 从指定的目录制作archlive启动内核模块及基本模块等"
@@ -73,6 +72,8 @@ else
 	echo "配置文件config不唯一或者其存放位置与config中定义的不一致" && usage 1
 fi
 
+#START_DIR=$(pwd)
+START_DIR=.
 PROFILE_DIR="${START_DIR}/${PROFILE_DIR}"
 LIVELINUX="${START_DIR}/linux-live/archlive"
 MKINITCPIO="${START_DIR}/mkinitcpio/mkinitcpio"
@@ -167,15 +168,15 @@ if [ "x${imgname}" = "x" ]; then imgname="${work_dir}/archlive-$(date +%F).iso";
 #archlive最终软件清单
 PKGFILE="$work_dir/packages.list"
 
-info "${APPNAME} : 程序设置"
-echo "         Archlive定制配置文件:    ${CONFIG_FILE}"
-echo " Archlive启动内核镜像配置文件:   ${CPIOCONFIG}"
-echo "    pacman.conf文件:   ${PACMANCONF}"
-echo "                         启动程序:   ${BOOT}"
-echo "                         工作目录:   ${work_dir}"
-echo "                         标镜像名:   ${imgname}"
-echo "                      目标镜像类型:   ${IMG_TYPE}"
-echo "                         模块类型:   ${EXT}"
+info "${APPNAME} 程序设置结果："
+echo "         Archlive定制配置文件: ${CONFIG_FILE}"
+echo " Archlive启动内核镜像配置文件: ${CPIOCONFIG}"
+echo "              pacman.conf文件: ${PACMANCONF}"
+echo "                     启动程序: ${BOOT}"
+echo "                     工作目录: ${work_dir}"
+echo "                     标镜像名: ${imgname}"
+echo "                 目标镜像类型: ${IMG_TYPE}"
+echo "                     模块类型: ${EXT}"
 sleep 1
 
 IMGROOT="${work_dir}/img"
@@ -384,8 +385,8 @@ command_install () {
         mount -o remount,add:0:${moduledir}/${mod}=rw aufs ${union}
 
 	info "将${lastbr}挂载为aufs文件系统的低层——只读"
-#        mount -o remount,mod:${lastbr}=ro aufs ${union}
-	mount -o remount,mod:${lastbr}=rr+wh aufs ${union}
+        mount -o remount,mod:${lastbr}=ro aufs ${union}
+#	mount -o remount,mod:${lastbr}=rr+wh aufs ${union}
         lastbr="${moduledir}/${mod}"
 
         if [ -e "${union}/var/lib/pacman/db.lck" ]; then
@@ -413,7 +414,8 @@ command_install () {
 		touch ${packlist}/${mod}.old
         	cat  "${PROFILE_DIR}/$LISTDIR/${mod}.list" | grep -v "^#" | while read pkgname; do
             		info "安装 $pkgname"
-            		$PACMAN -S -f --needed --noconfirm --config "${PACMANCONF}" --cachedir "$CACHE" -r "$union" $pkgname | tee -a ${buildlog}/${mod}-current.log
+            		$PACMAN -S -f --needed --noconfirm --config "${PACMANCONF}" --cachedir "$CACHE" \
+				-r "$union" $pkgname | tee -a ${buildlog}/${mod}-current.log
             		if [ $? -ne 0 ]; then
                 		warn "$pkgname 没有正确安装"
                 		cat ${buildlog}/${mod}-current.log >> ${buildlog}/${mod}-errors.log
@@ -422,7 +424,8 @@ command_install () {
         	if [ -e "${PROFILE_DIR}/$LISTDIR/${mod}.removelist" ]; then
             		cat "${PROFILE_DIR}/$LISTDIR/${mod}.removelist" | grep -v "^#" | while read pkgname; do
                 	info "删除 $pkgname"
-                	$PACMAN -R -d -n --noprogressbar --needed --noconfirm --config "${PACMANCONF}" -r "$union" $pkgname &> /dev/null
+                	$PACMAN -R -d -n --noprogressbar --needed --noconfirm --config "${PACMANCONF}" \
+				-r "$union" $pkgname &> /dev/null
             		done
         	fi
 	fi
@@ -462,7 +465,8 @@ command_install () {
 	find ${union}/usr/share/X11/locale/* -maxdepth 0 -type d ! -iregex ".*zh.C*" -exec rm -rf {} \;
 
           #  删除除zh_CN及英文外的帮助文件
-	find ${union}/usr/share/man/* -maxdepth 0 -type d ! -name "man*" ! -iregex ".*zh.CN" -exec rm -rf {} \;
+	find ${union}/usr/share/man/* -maxdepth 0 -type d ! -name "man*" ! -iregex ".*zh.CN" \
+		-exec rm -rf {} \;
 
           # 删除arch软件仓信息数据库
 	rm -rf ${union}/var/lib/pacman/sync/*
@@ -558,7 +562,8 @@ command_squash () {
 	info "创建附加设置模块overlay.${EXT}..."
 	OVERLAY="${PROFILE_DIR}/overlay"
 	if [ "${QUIET}" = "y" ]; then
-           $MKSQUASHFS "${OVERLAY}" "${IMGROOT}/${CDNAME}/base/overlay.${EXT}" -noappend  ${OPTION} >/dev/null
+           $MKSQUASHFS "${OVERLAY}" "${IMGROOT}/${CDNAME}/base/overlay.${EXT}" \
+		 -noappend  ${OPTION} >/dev/null
         else
 	  $MKSQUASHFS "${OVERLAY}" "${IMGROOT}/${CDNAME}/base/overlay.${EXT}" -noappend ${OPTION}
        fi
@@ -600,10 +605,12 @@ command_imgprepare () {
 	echo "archlive内核版本 ${kernelver} "
 
 	if [ "${QUIET}" = "y" ]; then
-		sh $MKINITCPIO -c "${CPIOCONFIG}" -b "${basedir}" -k "${kernelver}" -g "${IMGROOT}/${CDNAME}/boot/archlive.img" >/dev/null
+		sh $MKINITCPIO -c "${CPIOCONFIG}" -b "${basedir}" -k "${kernelver}" -g \
+			"${IMGROOT}/${CDNAME}/boot/archlive.img" >/dev/null
         	ret=$?
     	else
-		sh $MKINITCPIO -c "${CPIOCONFIG}" -b "${basedir}" -k "${kernelver}" -g "${IMGROOT}/${CDNAME}/boot/archlive.img"
+		sh $MKINITCPIO -c "${CPIOCONFIG}" -b "${basedir}" -k "${kernelver}" -g \
+			"${IMGROOT}/${CDNAME}/boot/archlive.img"
 		ret=$?
 	fi
 
