@@ -1,0 +1,6 @@
+#! /bin/bash
+tmpfile=$(mktemp -u).png
+scrot -s $tmpfile
+#targetfile=$(zenity --title="抓屏图片保存为" --file-selection --save --confirm-overwrite 2> /dev/null)
+targetfile=$(Xdialog --stdout --title "抓屏图片保存为：" --fselect "~/Desktop/$(date +'%F-%H%M%S').png" 0 0 2>/dev/null)
+mv $tmpfile $targetfile
