@@ -7,8 +7,9 @@
 # 打包放在http://archlive.googlecode.com/files/中
 # 脚本运行的时候会先自动下载部分配置文件。。。
 #
-# 2009-08-13 检误，并智能化检测、判断制作配置文件config
-# 2009-08-12 将是否采用overlay个性化定制目录设置放于config中
+# 2009-08-21 加入查找mkarchlive.config配置文件的文件夹层数限制
+# 2009-08-13 检误，并智能化检测、判断制作配置文件mkarchlive.config
+# 2009-08-12 将是否采用overlay个性化定制目录设置放于mkarchlive.config中
 # 2009-08-10 修改运行目录结构，并将模块压缩方式的选择放到配置文件中
 # 2009-08-10 修改判断软件仓是否已经在pacman.conf中定义的判断方式
 #
@@ -33,7 +34,7 @@ fi
 usage ()
 {
     echo " 本制作程序须用管理员身份或者sudo来执行，须要aufs文件系统的支持，同时有cdrkit等软件"
-    echo " 请确保archlive制作配置文件config存放位置与config中指定的PROFILE_DIR一致"
+    echo " 请确保archlive制作配置文件mkarchlive.config存放位置与mkarchlive.config中指定的PROFILE_DIR一致"
     echo ""
     echo " usage ${APPNAME} [选项] 命令 <命令选项>"
     echo " 一般选项:"
@@ -57,19 +58,19 @@ usage ()
     exit $1
 }
 
-# 根据配置文件config存放位置与config中PROFILE_DIR定义的值是否一致来判断查找到的配置文件是否是正确
+# 根据配置文件mkarchlive.config存放位置与mkarchlive.config中PROFILE_DIR定义的值是否一致来判断查找到的配置文件是否是正确
 config_is_right () {
-	case "${CONFIG_FILE}" in ./${PROFILE_DIR}/config) return 0;; esac
+	case "${CONFIG_FILE}" in ./${PROFILE_DIR}/mkarchlive.config) return 0;; esac
 	return 1
 }
 
-# 装载archlive的配置文件, 从当前目录查看是否存在config，存在即调用之
-CONFIG_FILE=`find . -name "config"`
-. ${CONFIG_FILE}
+# 装载archlive的配置文件, 从当前目录查看是否存在mkarchlive.config，存在即调用之
+CONFIG_FILE=`find . -maxdepth 4 -name "mkarchlive.config"`
+source ${CONFIG_FILE}
 if config_is_right; then
 	echo "载入archlive制作配置文件${CONFIG_FILE}"
 else
-	echo "配置文件config不唯一或者其存放位置与config中定义的不一致" && usage 1
+	echo "配置文件mkarchlive.config不唯一或者其存放位置与mkarchlive.config中定义的不一致" && usage 1
 fi
 
 #START_DIR=$(pwd)
@@ -84,7 +85,7 @@ EXTRAPACKAGEDIR="${PROFILE_DIR}/packages"
 ROOT_MOD="$(ls -1 ${PROFILE_DIR}/$LISTDIR | head -1)"
 PKGLIST=""
 
-# 如果config没有定义则采用如下默认配置
+# 如果mkarchlive.config没有定义则采用如下默认配置
 if [ "x$QUIET" = "x" ]; then QUIET="y"; fi
 if [ "x$FORCE" = "x" ]; then FORCE="y"; fi
 if [ "x$CDNAME" = "x" ]; then CDNAME="archlive"; fi
@@ -157,7 +158,7 @@ if [ "x${BOOT}" = "x" ]; then BOOT="syslinux"; fi
 
 if [ "x${work_dir}" = "x" ]; then
 	. ${CONFIG_FILE}
-	info "采用config中设置的临时工作目录${work_dir}"
+	info "采用mkarchlive.config中设置的临时工作目录${work_dir}"
 fi
 if [ "x${work_dir}" = "x" ]; then 
 	work_dir="/$(date +%m%d)"
@@ -327,7 +328,7 @@ command_prepare (){
 
     if [ "${Use_Overlay}" = "y" ]; then
 	prepare_overlay
-#  如果config里面定义Use_Overlay=n，需要删除PROFILE_DIR下的overlay(如果存在)则取消如下两行的注释
+#  如果mkarchlive.config里面定义Use_Overlay=n，需要删除PROFILE_DIR下的overlay(如果存在)则取消如下两行的注释
 #    else
 #	[ -d ${PROFILE_DIR}/overlay ] && rm -rf ${PROFILE_DIR}/overlay
     fi
@@ -340,7 +341,7 @@ command_install () {
     info "开始进行Archlive的制作..."
     if [ -e "${work_dir}" -a "${FORCE}" = "n" ]; then
         error "错误: 工作目录'${work_dir}'已经存在 , 退出."
-        error "       加入 -f 参数或者config中设置FORCE="y"来覆盖现有安装目录"
+        error "       加入 -f 参数或者mkarchlive.config中设置FORCE="y"来覆盖现有安装目录"
         exit 1
     fi
     mkdir -p "${IMGROOT}"
@@ -403,7 +404,8 @@ command_install () {
 	# 如果没有软件仓库信息，才更新软件仓数据库信息(安装第一个模块时需要更新，后续模块不更新)      
 	if [ ! -d "${INSTROOT}/var/lib/pacman/sync/core" ]; then
 		$PACMAN -Sy --noprogressbar --noconfirm --config "${PACMANCONF}" -fr "${union}"
-		rmdir --ignore-fail-on-non-empty ${INSTROOT}/var/lib/pacman/local
+		[ -d ${INSTROOT}/var/lib/pacman/local ] && rmdir --ignore-fail-on-non-empty \
+			${INSTROOT}/var/lib/pacman/local
 	fi
 
 	# 如果已经有已经安装软件信息（再加入-f参数重新制作archlive的时候）则只是更新已经安装软件以节省时间

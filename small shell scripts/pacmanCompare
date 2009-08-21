@@ -1,0 +1,93 @@
+#!/bin/bash
+# 本腳本來自于http://www.linuxsir.org/bbs/thread355307.html 
+# Arch源測速腳本
+#===============================================================================
+#
+#          FILE:  pacmanCompare
+# 
+#         USAGE:  ./pacmanCompare
+# 
+#   DESCRIPTION:  
+# 
+#       OPTIONS:  -f -W -n -h
+#  REQUIREMENTS:  ---
+#          BUGS:  ---
+#         NOTES:  ---
+#        AUTHOR:  Myth 
+#       COMPANY:  
+#       VERSION:  0.2
+#       CREATED:  08/8/2009 01:59:51 AM CST
+#      REVISION:  ---
+#===============================================================================
+
+
+Usage(){
+cat <<END
+Usage : pacmanCompare [-f file] [-W timeout] [-n Number] [-h]
+   -n : specify the number of mirror to display
+   -f : specify the pacman mirror file
+   -W : set timeout
+   -h : help
+END
+}
+
+timeout=5
+displayNumber=10
+mirrorFile="/etc/pacman.d/mirrorlist"
+
+while getopts hf:W:n: option
+do
+    case $option in
+        h)
+        Usage
+        exit 0
+        ;;
+        n)
+        displayNumber=$OPTARG
+        ;;
+        W)
+        timeout=$OPTARG
+        ;;
+        f)
+        mirrorFile=$OPTARG
+        ;;
+        \?)
+        Usage
+        exit 1
+        ;;
+    esac
+done
+
+
+
+if [ ! -e "$mirrorFile" -o -d "$mirrorFile" ]
+then
+    echo -e "Error while access pacman mirror file (Default is /etc/pacman.d/mirrorlist)\nExit !"
+    exit 2
+fi
+
+
+cat $mirrorFile |sed '/^$/d' |grep 'Server ='| sed 's/.*Server\ =\ ftp:\/\/\([^\/]*\)\/.*/\1/' |sed 's/.*Server\ =\ http:\/\/\([^\/]*\)\/.*/\1/' >/tmp/mirrorTemp$$
+
+echo "Testing .  Please wait  ."
+
+cat /tmp/mirrorTemp$$|
+while read line
+do
+    result=$(ping -c 1 -W $timeout "$line" 2>/dev/null |grep 'bytes from'|cut -d' ' -f8 |cut -d'=' -f 2)
+    echo -n ${result:-Can\'t connect\!}' ===>> '>>/tmp/speedTemp$$ 
+    echo "$line" >>/tmp/speedTemp$$
+    echo -n "."
+done
+
+echo
+
+
+rm /tmp/mirrorTemp$$
+
+grep -v "Can't connect" /tmp/speedTemp$$ |head -$displayNumber |sort -n 
+
+rm /tmp/speedTemp$$
+
+
+

@@ -93,6 +93,9 @@ audacious
 audacious-plugins
 ShowLyric
 #
+gmbox
+# Archlive定制编译包，Google音乐下载器
+#
 # vlc 及其依赖 57.44MB  vlc-git 23.68MB
 # libmpeg2 faad2 sdl libmp4v2  faac xvidcore x264 libtheora ffmpeg ladspa fluidsynth zvbi libdvbpsi
 # libdvdread libdvdnav libebml libmatroska  libcddb libmpcdec  libmodplug speex sdl_image libdca taglib 

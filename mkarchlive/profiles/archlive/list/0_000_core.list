@@ -1,22 +1,30 @@
--d kernel26-firmware
+#-d kernel26-firmware
 # The included firmware files of the Linux Kernel  0.99MB
 #kernel26
 # The Linux Kernel and modules    91.01MB
--d kernel26-archlive-mini
-# Archlive定制包，包含Archlive内核及模块，不含内核源码及头文件.加入了kernel官方补丁、gentoo官方补丁、UTF-8中文补丁、reiser4补丁及tuxonice-3.0.1补丁.
+#-d kernel26-archlive-mini
+-d kernel26-snapshot-2.6.31
+# Archlive定制包，包含Archlive内核及模块.加入了kernel官方补丁、gentoo及Fedora官方补丁、UTF-8中文补丁、reiser4补丁.
 # 91.01MB
 #
--d aufs2-utils-git
-#sqlzma
-#sqlzma-tools
--d squashfs
+#-d aufs2-git
+# Archlive定制包，如果内核不包含aufs模块则选择此包
+-d aufs2-util-git
+# Archlive定制包，如果内核包含aufs模块则选择此包
+#
+#-d sqlzma-2.6.31
+# Archlive定制包，兼容以前的模块，兼容slax、bt的程序模块
+-d squashfs-2.6.31
 # squashfs 4.0 archlive定制，包含squashfs-tools, 无法打开以前的archlive模块
 ##################### 常用网卡驱动程序
--d ndiswrapper-utils
--d ndiswrapper
--d madwifi-utils
--d madwifi
+-d ndiswrapper-archlive
+# Archlive 编译包, 内核驱动模块及ndiswrapper-utils
+#
+#-d madwifi-utils
+#-d madwifi
 #-d rt2500 #内核已经包含 分rt2500pci  rt2500usb rt2400 同样，rt61pci rt73usb也包含于内核中
+# 等Arch官方更新
+#
 -d rt2x00-rt61-fw
 -d rt2x00-rt71w-fw
 -d iwlwifi-3945-ucode
@@ -26,5 +34,6 @@
 -d ipw2100-fw
 -d ipw2200-fw
 -d tiacx-firmware
--d tiacx
+#-d tiacx
+# 等Arch官方更新
 -d zd1211-firmware
