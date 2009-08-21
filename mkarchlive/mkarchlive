@@ -49,7 +49,7 @@ usage ()
     echo "    -v               运行输出结果."
     echo "    -h               本帮助信息."
     echo " 命令:"
-    echo "     prepare                   : 准备iso根目录结构及overlay(如果选择需要overlay，在config中配置)"
+    echo "     prepare                   : 准备iso根目录结构及overlay(如果选择需要overlay，在archlive.conf中配置)"
     echo "     install <工作目录>        : 将程序安装到工作目录下"
     echo "     squash <工作目录>         : 从指定的目录创建squash模块"
     echo "     imgprepare <工作目录>     : 从指定的目录制作archlive启动内核模块及基本模块等"
@@ -248,7 +248,7 @@ prepare_overlay (){
 		echo "释放Archlive附加配置文件overlay.tgz"
 		tar -xzvpf overlay.tgz -C ${work_dir}   &> /dev/null
 	else
-		cp -r ${PROFILE_DIR}/overlay ${work_dir}/overlay
+		cp -r ${PROFILE_DIR}/overlay ${work_dir}/
     	fi
     	#OVERLAY=${PROFILE_DIR}/overlay
 	OVERLAY=${work_dir}/overlay
@@ -340,8 +340,8 @@ command_prepare (){
 command_install () {
 
     info "开始进行Archlive的制作..."
-    if [ -e "${work_dir}" -a "${FORCE}" = "n" ]; then
-        error "错误: 工作目录'${work_dir}'已经存在 , 退出."
+    if [ -e "${work_dir}/modules" -a "${FORCE}" = "n" ]; then
+        error "错误: 工作目录'${work_dir}/modules'已经存在 , 退出."
         error "       加入 -f 参数或者archlive.conf中设置FORCE="y"来覆盖现有安装目录"
         exit 1
     fi
@@ -398,9 +398,11 @@ command_install () {
         mkdir -p "${union}/var/lib/pacman"	
 
         mkdir -p "${union}/dev"
-        mknod ${union}/dev/console c 5 1 >/dev/null
-        mknod ${union}/dev/null c 1 3 >/dev/null
-        mknod ${union}/dev/zero c 1 5 >/dev/null
+	if [ ! -f ${union}/dev/console ]; then
+           mknod ${union}/dev/console c 5 1 >/dev/null
+           mknod ${union}/dev/null c 1 3 >/dev/null
+           mknod ${union}/dev/zero c 1 5 >/dev/null
+	fi
 
 	# 如果没有软件仓库信息，才更新软件仓数据库信息(安装第一个模块时需要更新，后续模块不更新)      
 	if [ ! -d "${INSTROOT}/var/lib/pacman/sync/core" ]; then
