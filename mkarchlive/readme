@@ -8,17 +8,17 @@
 2、DIY archlive 直通车
    获取到mkarchlive制作脚本后
    cd mkarchlive && (sudo sh ./mkarchlive all 2>&1 | tee ./log)
-   (以上脚本解释：进入到mkarchlive目录, 并以root身份运行mkarchlive, 制作archlive的临时工作目录及成品存放目录均在/YYDD 目录(mkarchlive.config文件定义)下， 并将制作日志存储于mkarchlive目录下的log中）
+   (以上脚本解释：进入到mkarchlive目录, 并以root身份运行mkarchlive, 制作archlive的临时工作目录及成品存放目录均在/YYDD 目录(archlive.conf文件定义)下， 并将制作日志存储于mkarchlive目录下的log中）
    如果不希望看到跳动的输出，可以将以上命令中的 " | tee ./log "改成 "> ./log" 即可“安静”地运行了！
 
 3、DIY archlive 高级
    通过以下三种途径来定制：
-   A. 修改配置文件mkarchlive/profiles/archlive/mkarchlive.config 来自定义软件仓、自定义软件清单、自定义主题、添加附加字体等
+   A. 修改配置文件mkarchlive/profiles/archlive/archlive.conf 来自定义软件仓、自定义软件清单、自定义主题、添加附加字体等
    B. 自编译软件，添加到软件清单中
    C. 修改mkarchlive/profiles/archlive/overlay文件夹下内容个性化定制（如果没有则mkarchlive会自动archlive googlecode下载archlive定制的overlay)
 
 4、定制参数优先级
-   命令行输入参数 > mkarchlive.config定义参数 > 默认参数
+   命令行输入参数 > archlive.conf定义参数 > 默认参数
    (以上优先级针对同一参数在多次定义时)
 
 5、制作完成后清理
@@ -27,11 +27,3 @@
 
 6、To Do:
    使该脚本支持运行于任何linux系统
-
-*************************************************
-特别注意： 本脚本执行过程中，调用的部分进程比如
-rm -rf ...  mksquashfs ...  pacman -Sy ...会占用
-较多CPU资源，所以在执行本脚本前最好停止firefox等
-占用CPU资源较多的程序，以免制作过程中出现死机。
-当然，在命令行模式下执行本脚本是最好的选择！
-*************************************************

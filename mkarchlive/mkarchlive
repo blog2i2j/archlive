@@ -7,9 +7,9 @@
 # 打包放在http://archlive.googlecode.com/files/中
 # 脚本运行的时候会先自动下载部分配置文件。。。
 #
-# 2009-08-21 加入查找mkarchlive.config配置文件的文件夹层数限制
-# 2009-08-13 检误，并智能化检测、判断制作配置文件mkarchlive.config
-# 2009-08-12 将是否采用overlay个性化定制目录设置放于mkarchlive.config中
+# 2009-08-21 加入查找archlive.conf配置文件的文件夹层数限制
+# 2009-08-13 检误，并智能化检测、判断制作配置文件archlive.conf
+# 2009-08-12 将是否采用overlay个性化定制目录设置放于archlive.conf中
 # 2009-08-10 修改运行目录结构，并将模块压缩方式的选择放到配置文件中
 # 2009-08-10 修改判断软件仓是否已经在pacman.conf中定义的判断方式
 #
@@ -34,7 +34,7 @@ fi
 usage ()
 {
     echo " 本制作程序须用管理员身份或者sudo来执行，须要aufs文件系统的支持，同时有cdrkit等软件"
-    echo " 请确保archlive制作配置文件mkarchlive.config存放位置与mkarchlive.config中指定的PROFILE_DIR一致"
+    echo " 请确保archlive制作配置文件archlive.conf存放位置与archlive.conf中指定的PROFILE_DIR一致"
     echo ""
     echo " usage ${APPNAME} [选项] 命令 <命令选项>"
     echo " 一般选项:"
@@ -58,19 +58,19 @@ usage ()
     exit $1
 }
 
-# 根据配置文件mkarchlive.config存放位置与mkarchlive.config中PROFILE_DIR定义的值是否一致来判断查找到的配置文件是否是正确
+# 根据配置文件archlive.conf存放位置与archlive.conf中PROFILE_DIR定义的值是否一致来判断查找到的配置文件是否是正确
 config_is_right () {
-	case "${CONFIG_FILE}" in ./${PROFILE_DIR}/mkarchlive.config) return 0;; esac
+	case "${CONFIG_FILE}" in ./${PROFILE_DIR}/archlive.conf) return 0;; esac
 	return 1
 }
 
-# 装载archlive的配置文件, 从当前目录查看是否存在mkarchlive.config，存在即调用之
-CONFIG_FILE=`find . -maxdepth 4 -name "mkarchlive.config"`
+# 装载archlive的配置文件, 从当前目录查看是否存在archlive.conf，存在即调用之
+CONFIG_FILE=`find . -maxdepth 4 -name "archlive.conf"`
 source ${CONFIG_FILE}
 if config_is_right; then
 	echo "载入archlive制作配置文件${CONFIG_FILE}"
 else
-	echo "配置文件mkarchlive.config不唯一或者其存放位置与mkarchlive.config中定义的不一致" && usage 1
+	echo "配置文件archlive.conf不唯一或者其存放位置与archlive.conf中定义的不一致" && usage 1
 fi
 
 #START_DIR=$(pwd)
@@ -85,7 +85,7 @@ EXTRAPACKAGEDIR="${PROFILE_DIR}/packages"
 ROOT_MOD="$(ls -1 ${PROFILE_DIR}/$LISTDIR | head -1)"
 PKGLIST=""
 
-# 如果mkarchlive.config没有定义则采用如下默认配置
+# 如果archlive.conf没有定义则采用如下默认配置
 if [ "x$QUIET" = "x" ]; then QUIET="y"; fi
 if [ "x$FORCE" = "x" ]; then FORCE="y"; fi
 if [ "x$CDNAME" = "x" ]; then CDNAME="archlive"; fi
@@ -158,7 +158,7 @@ if [ "x${BOOT}" = "x" ]; then BOOT="syslinux"; fi
 
 if [ "x${work_dir}" = "x" ]; then
 	. ${CONFIG_FILE}
-	info "采用mkarchlive.config中设置的临时工作目录${work_dir}"
+	info "采用archlive.conf中设置的临时工作目录${work_dir}"
 fi
 if [ "x${work_dir}" = "x" ]; then 
 	work_dir="/$(date +%m%d)"
@@ -328,7 +328,7 @@ command_prepare (){
 
     if [ "${Use_Overlay}" = "y" ]; then
 	prepare_overlay
-#  如果mkarchlive.config里面定义Use_Overlay=n，需要删除PROFILE_DIR下的overlay(如果存在)则取消如下两行的注释
+#  如果archlive.conf里面定义Use_Overlay=n，需要删除PROFILE_DIR下的overlay(如果存在)则取消如下两行的注释
 #    else
 #	[ -d ${PROFILE_DIR}/overlay ] && rm -rf ${PROFILE_DIR}/overlay
     fi
@@ -336,12 +336,13 @@ command_prepare (){
     # 删除下载的 tgz文件
     [ "$DELETE_TGZ" = "y" ] && rm -f ${START_DIR}/*.tgz
 }
+
 command_install () {
 
     info "开始进行Archlive的制作..."
     if [ -e "${work_dir}" -a "${FORCE}" = "n" ]; then
         error "错误: 工作目录'${work_dir}'已经存在 , 退出."
-        error "       加入 -f 参数或者mkarchlive.config中设置FORCE="y"来覆盖现有安装目录"
+        error "       加入 -f 参数或者archlive.conf中设置FORCE="y"来覆盖现有安装目录"
         exit 1
     fi
     mkdir -p "${IMGROOT}"
@@ -400,14 +401,13 @@ command_install () {
         mknod ${union}/dev/console c 5 1 >/dev/null
         mknod ${union}/dev/null c 1 3 >/dev/null
         mknod ${union}/dev/zero c 1 5 >/dev/null
- 
+
 	# 如果没有软件仓库信息，才更新软件仓数据库信息(安装第一个模块时需要更新，后续模块不更新)      
 	if [ ! -d "${INSTROOT}/var/lib/pacman/sync/core" ]; then
 		$PACMAN -Sy --noprogressbar --noconfirm --config "${PACMANCONF}" -fr "${union}"
-		[ -d ${INSTROOT}/var/lib/pacman/local ] && rmdir --ignore-fail-on-non-empty \
-			${INSTROOT}/var/lib/pacman/local
+		#rmdir --ignore-fail-on-non-empty ${INSTROOT}/var/lib/pacman/local
 	fi
-
+ 
 	# 如果已经有已经安装软件信息（再加入-f参数重新制作archlive的时候）则只是更新已经安装软件以节省时间
 	if [ -d ${moduledir}/${mod}/var/lib/pacman/local ]; then
 		pacman -Q -r ${moduledir}/${mod} > ${packlist}/${mod}.old
@@ -434,44 +434,12 @@ command_install () {
 	# 输出模块软件清单
 	pacman -Q -r ${moduledir}/${mod} > ${packlist}/${mod}.new
 	if [ -f ${packlist}/${mod}.old ]; then
-		packagediff.py ${packlist}/${mod}.old ${packlist}/${mod}.new > ${packlist}/${mod}.list
+		. pylibs/packagediff.py ${packlist}/${mod}.old ${packlist}/${mod}.new > ${packlist}/${mod}.list
 	fi
 	
         if [ -e "${union}/etc/ld.so.conf" ]; then
             ldconfig -r ${union}
         fi
-
-        if [ -d "${union}/usr/share/icons" ]; then
-            remove "${union}/usr/share/icons/hicolor/icon-theme.cache"
-            remove "${union}/usr/share/icons/Rodent/icon-theme.cache"
-	    remove "${union}/usr/share/icons/nuoveXT2/icon-theme.cache"
-        fi
-
-          # 删除为宿主系统创建的内核镜像文件
-        find "${union}/boot" -name *.img -delete
-
-
-          # 清理系统
-        info "清理无用文件..."
-        find "${union}" -name *.pacnew -name *.pacsave -name *.pacorig -delete
-	# 删除指定的文件夹
-        kill_dirs="var/cache/man var/cache/pacman var/log/* var/mail tmp/* initrd ${DELDIR}"
-        for x in ${kill_dirs}; do
-            if [ -e "${union}/${x}" ]; then
-                rm -Rf "${union}/${x}"
-            fi
-        done
-
-          #  删除除zh_CN外的语言文件
-	find ${union}/usr/share/locale/* -maxdepth 0 -type d ! -iregex ".*zh.CN" -exec rm -rf {} \;
-	find ${union}/usr/share/X11/locale/* -maxdepth 0 -type d ! -iregex ".*zh.C*" -exec rm -rf {} \;
-
-          #  删除除zh_CN及英文外的帮助文件
-	find ${union}/usr/share/man/* -maxdepth 0 -type d ! -name "man*" ! -iregex ".*zh.CN" \
-		-exec rm -rf {} \;
-
-          # 删除arch软件仓信息数据库
-	rm -rf ${union}/var/lib/pacman/sync/*
 
         if [ "$BOOT" = "grub" -o "$BOOT" = "grub-gfx" ]; then
             if [ -e "${union}/boot" -a -e "${OVERLAY}/boot" ]; then
@@ -490,6 +458,12 @@ command_install () {
         
     done
 
+    if [ -d "${union}/usr/share/icons" ]; then
+            remove "${union}/usr/share/icons/hicolor/icon-theme.cache"
+            remove "${union}/usr/share/icons/Rodent/icon-theme.cache"
+	    remove "${union}/usr/share/icons/nuoveXT2/icon-theme.cache"
+    fi
+
     if [ -e "${PROFILE_DIR}/isolinux" ]; then
         cp -r "${PROFILE_DIR}/isolinux" "${IMGROOT}"
     fi
@@ -505,13 +479,38 @@ command_install () {
     info "更新内核依赖关系"
     kernelver=$(_kversion)
     depmod -a -b "${INSTROOT}" "${kernelver}"
-        
-    # Clean up unionfs whiteout files
+       
+    info "清理无用文件..."
     #echo "Removing unionfs .wh. files."
     find ${moduledir} -type f -name ".wh.*" -exec rm {} \;
     find ${moduledir} -type d -name ".wh.*" -exec rm -rf {} \;
     # 删除模块目录中软件仓数据库信息
     find ${moduledir}/*/var/lib/pacman/sync -type d -exec rm -rf {} \; 2>/dev/null
+
+    # 删除为宿主系统创建的内核镜像文件
+    find "${moduledir}/boot" -name *.img -delete
+
+    # 删除pamcan产生的垃圾文件
+    find "${moduledir}" -name *.pacnew -name *.pacsave -name *.pacorig -delete
+
+    # 删除指定的文件夹
+    kill_dirs="var/cache/man var/cache/pacman var/log/* var/mail tmp/* initrd ${DELDIR}"
+    for x in ${kill_dirs}; do
+        if [ -e "${union}/${x}" ]; then
+                rm -Rf "${union}/${x}"
+        fi
+    done
+
+    #  删除除zh_CN外的语言文件
+    find ${moduledir}/*/usr/share/locale/* -maxdepth 0 -type d ! -iregex ".*zh.CN" -exec rm -rf {} \;
+    find ${moduledir}/*/usr/share/X11/locale/* -maxdepth 0 -type d ! -iregex ".*zh.C*" -exec rm -rf {} \;
+
+    #  删除除zh_CN及英文外的帮助文件
+    find ${moduledir}/*/usr/share/man/* -maxdepth 0 -type d ! -name "man*" ! -iregex ".*zh.CN" \
+		-exec rm -rf {} \;
+
+    # 删除arch软件仓信息数据库
+    rm -rf ${moduledir}/*/var/lib/pacman/sync/*
 
      # 备份Arch原始启动关机脚本，以便Larchin安装
     for larchsavefile in ${moduledir}/000_base/etc/{rc.sysinit,rc.shutdown,rc.local}; do
