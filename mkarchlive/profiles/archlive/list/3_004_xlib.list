@@ -9,32 +9,9 @@ bluez
 # Sun's java runtime environment   110.27MB
 # 由于your-freedom 依赖于openjdk6， 所以先安装openjdk6、your-freedom 再删除openjdk6，再装回jre
 #  your-freedom 在jre下也正常工作（官方pkgbuild问题，应依赖于java-runtime）
-##### 媒体库 #######################
-# gstreamer0.10 liboil gstreamer0.10-base gstreamer0.10-good
-# libraw1394 libavc1394 libiec61883 aalib libtheora speex libshout
-# libdv audiofile esound libidl2 orbit2 libsasl libldap gconf 
-# wavpack taglib libproxy libsoup libv4l libcaca 
-gstreamer0.10-good-plugins
-#
-#cdparanoia libvisual
-gstreamer0.10-base-plugins
-#
-# gstreamer0.10-bad xvidcore libdca libusb1 libdc1394 exempi 
-# libsndfile jack-audio-connection-kit libmp4v2-1.6-1  faac  gcc 
-# libexif ppl cloog-ppl musicbrainz faad2 libmms x264 libcdaudio
-# libmpcdec sdl mjpegtools libdvdread libdvdnav libmodplug jasper
-# libxslt raptor ladspa liblrdf
-gstreamer0.10-bad-plugins
-#
-# gstreamer0.10-ugly libmpeg2 a52dec libsidplay libcddb libcdio
-gstreamer0.10-ugly-plugins
-#
-gstreamer0.10-python
-gstreamer0.10-ffmpeg
-# Gstreamer FFMpeg Plugin  5.85MB
-#
 #### Special
 # your-freedom 2.66MB
+# ca-certificates-java  openjdk6
 your-freedom
 # 依赖安装openjdk6  151.25MB
 jre

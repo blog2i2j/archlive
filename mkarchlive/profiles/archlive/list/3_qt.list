@@ -1,2 +1,3 @@
-qtmod
+qt
+#qtmod
 # Archlive 定制，兼容qt，以保证不重复安装

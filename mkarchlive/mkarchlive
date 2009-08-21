@@ -146,8 +146,8 @@ command_name="${1}"
 
 case "${command_name}" in
     prepare) ;;
-    install) work_dir="${2}" ;;
-    squash) work_dir="${2}" ;;
+    install*) work_dir="${2}" ;;
+    squash*) work_dir="${2}" ;;
     imgprepare) work_dir="${2}" ;;
     img) work_dir="${2}"; imgname="${3}" ;;
     all) work_dir="${2}"; imgname="${3}" ;;
@@ -246,9 +246,12 @@ prepare_overlay (){
 			wget -q "${TGZURL}/overlay.tgz"  &> /dev/null
 		fi
 		echo "释放Archlive附加配置文件overlay.tgz"
-		tar -xzvpf overlay.tgz -C ${PROFILE_DIR}   &> /dev/null
+		tar -xzvpf overlay.tgz -C ${work_dir}   &> /dev/null
+	else
+		cp -r ${PROFILE_DIR}/overlay ${work_dir}/overlay
     	fi
-    	OVERLAY=${PROFILE_DIR}/overlay
+    	#OVERLAY=${PROFILE_DIR}/overlay
+	OVERLAY=${work_dir}/overlay
     	echo "将主题、图标、鼠标指针文件及字体等放在overlay模块中..."
     	if [ -d ${OVERLAY}/usr/share/themes ]; then
 	 	rm -rf ${OVERLAY}/usr/share/themes
@@ -316,7 +319,7 @@ command_prepare (){
     fi
 
     info "准备目标镜像根目录结构及启动的相关配置文件"
-    if [ ! -d ${PROFILE_DIR}/cd-root ]; then 
+    if [ ! -d "${PROFILE_DIR}/cd-root" ]; then 
 	if [ ! -f cd-root.tgz ]; then
 	   echo "下载Archlive光盘根目录结构文件cd-root.tgz"
 	   wget -q "${TGZURL}/cd-root.tgz"  &> /dev/null
@@ -328,9 +331,6 @@ command_prepare (){
 
     if [ "${Use_Overlay}" = "y" ]; then
 	prepare_overlay
-#  如果archlive.conf里面定义Use_Overlay=n，需要删除PROFILE_DIR下的overlay(如果存在)则取消如下两行的注释
-#    else
-#	[ -d ${PROFILE_DIR}/overlay ] && rm -rf ${PROFILE_DIR}/overlay
     fi
 
     # 删除下载的 tgz文件
@@ -431,15 +431,16 @@ command_install () {
             		done
         	fi
 	fi
+	
+        if [ -e "${union}/etc/ld.so.conf" ]; then
+            ldconfig -r ${union}
+        fi
+
 	# 输出模块软件清单
 	pacman -Q -r ${moduledir}/${mod} > ${packlist}/${mod}.new
 	if [ -f ${packlist}/${mod}.old ]; then
 		. pylibs/packagediff.py ${packlist}/${mod}.old ${packlist}/${mod}.new > ${packlist}/${mod}.list
 	fi
-	
-        if [ -e "${union}/etc/ld.so.conf" ]; then
-            ldconfig -r ${union}
-        fi
 
         if [ "$BOOT" = "grub" -o "$BOOT" = "grub-gfx" ]; then
             if [ -e "${union}/boot" -a -e "${OVERLAY}/boot" ]; then
@@ -533,6 +534,7 @@ command_squash () {
     for DIR in $MODULES; do
         MOD="$(basename $DIR).${EXT}"
         info "创建模块 $MOD"
+	case $DIR in [1-9]_*) moduleplace="${IMGROOT}/${CDNAME}/modules";; esac
         if [ ! "$(find "$IMGROOT/$CDNAME" -name "$MOD")" ]; then
 		if [ -d ${moduledir}/$DIR/usr/share/fonts ]; then 
 			chmod 755 ${moduledir}/$DIR/usr/share/fonts
@@ -556,12 +558,12 @@ command_squash () {
     if [ "$MODULES" = "" ]; then
 	info "没有编译模块"
     else
-	mksquash ${moduledir}/ -noappend ${OPTION}
+	$MKSQUASHFS ${moduledir}/ -noappend ${OPTION}
     fi
 
-    if [ "${Use_Overlay}" = "y" ] && [ -d "${PROFILE_DIR}/overlay" ]; then 
+    if [ "${Use_Overlay}" = "y" ] && [ -d "${work_dir}/overlay" ]; then 
 	info "创建附加设置模块overlay.${EXT}..."
-	OVERLAY="${PROFILE_DIR}/overlay"
+	OVERLAY="${work_dir}/overlay"
 	if [ "${QUIET}" = "y" ]; then
            $MKSQUASHFS "${OVERLAY}" "${IMGROOT}/${CDNAME}/base/overlay.${EXT}" \
 		 -noappend  ${OPTION} >/dev/null
@@ -578,8 +580,10 @@ command_squash () {
 command_imgprepare () {
 
 	info "创建基本模块archlive.sqfs——命令位置默认${LIVELINUX}/initrd_create"
-
-	sh ${LIVELINUX}/initrd_create ${CDNAME}
+	start=$(pwd)
+	cd ${LIVELINUX}
+	sh initrd_create ${CDNAME}
+	cd $start
 	mv -f ${LIVELINUX}/${CDNAME}.sqfs "${IMGROOT}/${CDNAME}/archlive.sqfs"
 	chmod 0444 "${IMGROOT}/${CDNAME}/archlive.sqfs"
 

@@ -131,15 +131,19 @@ if [ "$USENTFS3G" = "yes" ]; then
    cp -a ntfs-3g/* $INITRD_TREE
 fi
 
-cp -a rootfs/* $INITRD_TREE
-
-cp $ROOT/bin/busybox $INITRD_TREE/bin/
+cp -af rootfs/* $INITRD_TREE
+rm -f $INITRD_TREE/bin/*
+#cp $ROOT/bin/busybox $INITRD_TREE/bin/
 # build links to busybox's functions from busybox's own help text
 for i in $(rootfs/bin/busybox --help | grep -v Copyright | grep , | tr , " "); do
 #for i in $(/bin/busybox --help | grep -v Copyright | grep , | tr , " "); do
-   ln -s busybox $INITRD_TREE/bin/$i
+	ln -s busybox $INITRD_TREE/bin/$i
 done
 
+for i in $(ls rootfs/bin); do
+	rm -f $INITRD_TREE/bin/$i
+	cp -f rootfs/bin/$i $INITRD_TREE/bin/$i
+done
 ln -sf bin $INITRD_TREE/sbin
 
 # necessary modules and dependency files
@@ -256,8 +260,7 @@ chmod ago-x $INITRDIMG.sqfs
 #debug "deleting directory $MOUNTDIR"
 #rmdir $MOUNTDIR
 
-
-#debug "deleting directory $INITRD_TREE"
-#rm -Rf $INITRD_TREE
+debug "deleting directory $INITRD_TREE"
+rm -Rf $INITRD_TREE
 
 debug "$INITRDIMG.sqfs created"

@@ -295,6 +295,14 @@ gtkdialog
 #zenity
 # Display graphical dialog boxes from shell scripts  4.67MB
 #
+# 以下为gksu所依赖  总共20.54MB
+libidl2
+orbit2
+libsasl
+libldap
+gconf
+gnome-keyring
+libgtop libgksu
 gksu
 # A graphical frontend for su    0.10MB
 #
@@ -313,6 +321,10 @@ scrot
 #giflib libid3tag imlib2 giblib
 # A simple command-line screenshot utility for X    0.09MB
 #
+alsa-lib
+run-parts
+ca-certificates
+curl
 conky
 # 依赖于 run-parts ca-certificates curl
 # An advanced, highly configurable system monitor for X based on torsmo   0.27MB
@@ -348,9 +360,10 @@ alsa-oss
 ################## 小型桌面环境  fluxbox 3.71MB  awesome 2.47MB icewm 8.84MB fvwm 6.88MB
 fluxbox
 #
-# libev  libxdg-basedir
+# libev  libxdg-basedir lua dbus libxdg-basedir
 awesome
 #
+# gtk imlib
 icewm
 # 依赖于gtk  imlib   (Total 8.84MB)
 #
