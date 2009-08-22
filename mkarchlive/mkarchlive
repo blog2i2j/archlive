@@ -329,7 +329,9 @@ command_prepare (){
    fi
    CDROOT="${PROFILE_DIR}/cd-root"
 
-   [ "${Use_Overlay}" = "y" ] && 	prepare_overlay
+   if [ "${Use_Overlay}" = "y" ]; then
+	prepare_overlay
+   fi
 
    # 删除下载的 tgz文件
    [ "$DELETE_TGZ" = "y" ] && rm -f ${START_DIR}/*.tgz
@@ -361,15 +363,15 @@ command_install () {
    fi
 
    # 软件安装日志文件夹
-   [ -d ${buildlog} ] && rm -r ${buildlog}
+   [ -d ${buildlog} ] && rm -R ${buildlog}
    mkdir -p ${buildlog}
 
    # 软件清单文件夹
-   [ -d ${packlist} ] && rm -r ${packlist}
+   [ -d ${packlist} ] && rm -R ${packlist}
    mkdir -p ${packlist}
 
    # 如果已经存在软件仓数据信息文件夹，则删除
-   [ -d "${INSTROOT}/var/lib/pacman/sync" ] && rm -r "${INSTROOT}/var/lib/pacman/sync"
+   [ -d "${INSTROOT}/var/lib/pacman/sync" ] && rm -R "${INSTROOT}/var/lib/pacman/sync"
 
    for mod in ${MODULES}; do
         mkdir -p "${moduledir}/${mod}"
@@ -382,7 +384,9 @@ command_install () {
 #	mount -o remount,mod:${lastbr}=rr+wh aufs ${union}
         lastbr="${moduledir}/${mod}"
 
-        [ -e "${union}/var/lib/pacman/db.lck" ] && rm -f ${union}/var/lib/pacman/db.lck
+        if [ -e "${union}/var/lib/pacman/db.lck" ]; then
+            rm -f ${union}/var/lib/pacman/db.lck
+        fi
         
         mkdir -p "${union}/var/lib/pacman"	
 
@@ -456,7 +460,9 @@ command_install () {
 	    remove "${union}/usr/share/icons/nuoveXT2/icon-theme.cache"
    fi
 
-   [ -e "${PROFILE_DIR}/isolinux" ] && cp -r "${PROFILE_DIR}/isolinux" "${IMGROOT}"
+   if [ -e "${PROFILE_DIR}/isolinux" ]; then
+        cp -r "${PROFILE_DIR}/isolinux" "${IMGROOT}"
+   fi
 
    # 导出已经安装的软件清单
    pacman -Q -r ${union} > ${PKGFILE}
@@ -485,7 +491,9 @@ command_install () {
    # 删除指定的文件夹
    kill_dirs="var/cache/man var/cache/pacman var/log/* var/mail tmp/* initrd ${DELDIR}"
    for x in ${kill_dirs}; do
-        [ -e "${union}/${x}" ] && rm -Rf "${union}/${x}"
+        if [ -e "${union}/${x}" ]; then
+                rm -Rf "${union}/${x}"
+        fi
    done
 
    #  删除除zh_CN外的语言文件
@@ -577,13 +585,11 @@ command_imgprepare () {
    [ "${INSTROOT:0:1}" != "/" ] && basedir="${PROFILE_DIR}/${INSTROOT}"
 
    info "准备archlive内核及内核镜像"
-		
+   [ ! -d "${IMGROOT}/${CDNAME}/boot" ] && mkdir -p "${IMGROOT}/${CDNAME}/boot"
    if [ -f "${IMGROOT}/boot/vmlinuz26" ]; then
-	mv -f "${IMGROOT}/boot/vmlinuz26" "${IMGROOT}/${CDNAME}/boot/vmlinuz26"
+	rm -f "${IMGROOT}/boot/vmlinuz26"
    fi
-   if [ ! -f "${IMGROOT}/${CDNAME}/boot/vmlinuz26" ]; then
-	cp -f "${basedir}/boot/vmlinuz26" "${IMGROOT}/${CDNAME}/boot/vmlinuz26"
-   fi
+   cp -f "${basedir}/boot/vmlinuz26" "${IMGROOT}/${CDNAME}/boot/vmlinuz26"
 
    if [ ! -e "${CPIOCONFIG}" ]; then
 	error "错误: live系统启动内核镜像配置文件 '${CPIOCONFIG}' 不存在, 退出."
