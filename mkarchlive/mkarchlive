@@ -329,9 +329,7 @@ command_prepare (){
    fi
    CDROOT="${PROFILE_DIR}/cd-root"
 
-   if [ "${Use_Overlay}" = "y" ]; then
-	prepare_overlay
-   fi
+   [ "${Use_Overlay}" = "y" ] && 	prepare_overlay
 
    # 删除下载的 tgz文件
    [ "$DELETE_TGZ" = "y" ] && rm -f ${START_DIR}/*.tgz
@@ -363,15 +361,15 @@ command_install () {
    fi
 
    # 软件安装日志文件夹
-   [ -d ${buildlog} ] && rm -R ${buildlog}
+   [ -d ${buildlog} ] && rm -r ${buildlog}
    mkdir -p ${buildlog}
 
    # 软件清单文件夹
-   [ -d ${packlist} ] && rm -R ${packlist}
+   [ -d ${packlist} ] && rm -r ${packlist}
    mkdir -p ${packlist}
 
    # 如果已经存在软件仓数据信息文件夹，则删除
-   [ -d "${INSTROOT}/var/lib/pacman/sync" ] && rm -R "${INSTROOT}/var/lib/pacman/sync"
+   [ -d "${INSTROOT}/var/lib/pacman/sync" ] && rm -r "${INSTROOT}/var/lib/pacman/sync"
 
    for mod in ${MODULES}; do
         mkdir -p "${moduledir}/${mod}"
@@ -384,9 +382,7 @@ command_install () {
 #	mount -o remount,mod:${lastbr}=rr+wh aufs ${union}
         lastbr="${moduledir}/${mod}"
 
-        if [ -e "${union}/var/lib/pacman/db.lck" ]; then
-            rm -f ${union}/var/lib/pacman/db.lck
-        fi
+        [ -e "${union}/var/lib/pacman/db.lck" ] && rm -f ${union}/var/lib/pacman/db.lck
         
         mkdir -p "${union}/var/lib/pacman"	
 
@@ -460,9 +456,7 @@ command_install () {
 	    remove "${union}/usr/share/icons/nuoveXT2/icon-theme.cache"
    fi
 
-   if [ -e "${PROFILE_DIR}/isolinux" ]; then
-        cp -r "${PROFILE_DIR}/isolinux" "${IMGROOT}"
-   fi
+   [ -e "${PROFILE_DIR}/isolinux" ] && cp -r "${PROFILE_DIR}/isolinux" "${IMGROOT}"
 
    # 导出已经安装的软件清单
    pacman -Q -r ${union} > ${PKGFILE}
@@ -491,9 +485,7 @@ command_install () {
    # 删除指定的文件夹
    kill_dirs="var/cache/man var/cache/pacman var/log/* var/mail tmp/* initrd ${DELDIR}"
    for x in ${kill_dirs}; do
-        if [ -e "${union}/${x}" ]; then
-                rm -Rf "${union}/${x}"
-        fi
+        [ -e "${union}/${x}" ] && rm -Rf "${union}/${x}"
    done
 
    #  删除除zh_CN外的语言文件
