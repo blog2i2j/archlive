@@ -14,6 +14,7 @@
 # 2009-08-10 修改判断软件仓是否已经在pacman.conf中定义的判断方式
 #
 APPNAME=$(basename "${0}")
+cmdline=$@
 
 error () { echo -e "\033[1;31;40m!!!错误 \033[1;37;40m$@\033[1;0m"; }
 warn ()  { echo -e "\033[1;33;40m***警告 \033[1;37;40m$@\033[1;0m"; }
@@ -83,7 +84,9 @@ REPO_ADD="${START_DIR}/../repo-tools/repo-add"
 CPIOCONFIG="${PROFILE_DIR}/archlive-mkinitcpio.conf"
 EXTRAPACKAGEDIR="${PROFILE_DIR}/packages"
 ROOT_MOD="$(ls -1 ${PROFILE_DIR}/$LISTDIR | head -1)"
-PKGLIST=""
+
+#去掉空格
+PKGLIST="$(echo $MODULES)"
 
 # 如果archlive.conf没有定义则采用如下默认配置
 if [ "x$QUIET" = "x" ]; then QUIET="y"; fi
@@ -134,16 +137,11 @@ while getopts 'i:P:b:M:m:a:t:c:nfvh' arg; do
    esac
 done
 
-#去掉空格
-PKGLIST="$(echo $MODULES)"
-
-shift $(($OPTIND - 1))
 echo "参数: $@"
-
+shift $(($OPTIND - 1))
 #[ $# -le 1 ] && usage 1
 
 command_name="${1}"
-
 case "${command_name}" in
    prepare) ;;
    install*) work_dir="${2}" ;;
@@ -169,12 +167,15 @@ if [ "x${imgname}" = "x" ]; then imgname="${work_dir}/archlive-$(date +%F).iso";
 #archlive最终软件清单
 PKGFILE="$work_dir/packages.list"
 
+case $cmdline in *-f*) FORCE="y";; esac
+
 info "${APPNAME} 程序设置结果："
 echo "         Archlive定制配置文件: ${CONFIG_FILE}"
 echo " Archlive启动内核镜像配置文件: ${CPIOCONFIG}"
 echo "              pacman.conf文件: ${PACMANCONF}"
 echo "                     启动程序: ${BOOT}"
 echo "                     工作目录: ${work_dir}"
+echo "                    是否覆盖： ${FORCE}"
 echo "                     标镜像名: ${imgname}"
 echo "                 目标镜像类型: ${IMG_TYPE}"
 echo "                     模块类型: ${EXT}"
@@ -327,7 +328,6 @@ command_prepare (){
 	echo "释放Archlive光盘根目录结构cd-root.tgz"
 	tar -xzvpf cd-root.tgz -C ${PROFILE_DIR} &> /dev/null
    fi
-   CDROOT="${PROFILE_DIR}/cd-root"
 
    if [ "${Use_Overlay}" = "y" ]; then
 	prepare_overlay
@@ -335,6 +335,8 @@ command_prepare (){
 
    # 删除下载的 tgz文件
    [ "$DELETE_TGZ" = "y" ] && rm -f ${START_DIR}/*.tgz
+   
+   info "mkarchlive准备工作完成"
 }
 
 command_install () {
@@ -352,7 +354,7 @@ command_install () {
    mkdir -p "${moduleplace}"
    mkdir -p "${moduledir}"
    mkdir -p ${IMGROOT}/${CDNAME}/{base,modules,optional,rootcopy}
-   cp -af ${CDROOT}/* "${IMGROOT}"
+   [ -d "${PROFILE_DIR}/cd-root" ] && cp -af ${PROFILE_DIR}/cd-root/* "${IMGROOT}"
 
    info "开始将$LISTDIR里面的软件安装到对应模块文件夹"
 
@@ -374,8 +376,9 @@ command_install () {
    [ -d "${INSTROOT}/var/lib/pacman/sync" ] && rm -R "${INSTROOT}/var/lib/pacman/sync"
 
    for mod in ${MODULES}; do
+	#如果模块名以#开头则复略
+	[ "$(case $mod in \#*) echo 0;; esac)" ] && continue
         mkdir -p "${moduledir}/${mod}"
-
 	info "将${moduledir}/${mod}挂载为aufs系统的最高层——可写"
         mount -o remount,add:0:${moduledir}/${mod}=rw aufs ${union}
 
@@ -391,7 +394,7 @@ command_install () {
         mkdir -p "${union}/var/lib/pacman"	
 
         mkdir -p "${union}/dev"
-	if [ ! -f ${union}/dev/console ]; then
+	if [ ! -c ${union}/dev/console ]; then
            mknod ${union}/dev/console c 5 1 >/dev/null
            mknod ${union}/dev/null c 1 3 >/dev/null
            mknod ${union}/dev/zero c 1 5 >/dev/null
@@ -404,6 +407,8 @@ command_install () {
 	fi
  
 	# 如果已经有已经安装软件信息（再加入-f参数重新制作archlive的时候）则只是更新已经安装软件以节省时间
+
+	# 如果已经存在对应模块，则将对应软件包及版本信息输出到清单
 	if [ -d ${moduledir}/${mod}/var/lib/pacman/local ]; then
 		pacman -Q -r ${moduledir}/${mod} > ${packlist}/${mod}.old
 		pacman -Su -f --needed --noconfirm --config "${PACMANCONF}" -fr "${union}"
@@ -431,8 +436,9 @@ command_install () {
             ldconfig -r ${union}
         fi
 
-	# 输出模块软件清单
+	# 输出最新模块软件清单
 	pacman -Q -r ${moduledir}/${mod} > ${packlist}/${mod}.new
+	# 比较新旧清单，比较两个清单
 	if [ -f ${packlist}/${mod}.old ]; then
 	   . pylibs/packagediff.py ${packlist}/${mod}.old ${packlist}/${mod}.new > ${packlist}/${mod}.list
 	fi
@@ -451,7 +457,6 @@ command_install () {
                 rm -rf "${IMGROOT}/boot/grub"
             fi
         fi
-        
    done
 
    if [ -d "${union}/usr/share/icons" ]; then
@@ -477,18 +482,24 @@ command_install () {
    depmod -a -b "${INSTROOT}" "${kernelver}"
        
    info "清理无用文件..."
-   #echo "Removing unionfs .wh. files."
-   find ${moduledir} -type f -name ".wh.*" -exec rm {} \;
-   find ${moduledir} -type d -name ".wh.*" -exec rm -rf {} \;
-   # 删除模块目录中软件仓数据库信息
-   find ${moduledir}/*/var/lib/pacman/sync -type d -exec rm -rf {} \; 2>/dev/null
+   echo "清理aufs文件系统临时文件.wh.*"
+   #find ${moduledir} -type d -name .wh.* -exec rm -rf {} \;
+   for tmp in "$(find ${moduledir} -type f -name .wh.* )"; do rm -f $tmp; done
 
-   # 删除为宿主系统创建的内核镜像文件
-   find "${moduledir}/*/boot" -name *.img -delete
-   # 删除pamcan产生的垃圾文件
-   find "${moduledir}" -name *.pacnew -name *.pacsave -name *.pacorig -delete
+   echo "删除软件仓数据库信息"
+   #find ${moduledir}/*/var/lib/pacman/sync -type d -exec rm -rf {} \; 2>/dev/null
+   for tmp in "$(find ${moduledir}/*/var/lib/pacman/sync -type d)"; do rm -rf $tmp; done
 
-   # 删除指定的文件夹
+   echo "删除为宿主系统创建的内核镜像文件"
+   #find "${moduledir}/*/boot" -name *.img -delete
+   #for tmp in "$(find "${moduledir}/*/boot" -name *.img)"; do rm -f $tmp; done
+   rm -f "${moduledir}/*/boot/*.img"
+
+   echo "删除pamcan产生的垃圾文件"
+   #find ${moduledir} -name *.pacnew -name *.pacsave -name *.pacorig -delete
+   for tmp in "$(find ${moduledir} -name *.pacnew -name *.pacsave -name *.pacorig)"; do rm -f $tmp; done
+
+   echo "删除指定的文件夹"
    kill_dirs="var/cache/man var/cache/pacman var/log/* var/mail tmp/* initrd ${DELDIR}"
    for x in ${kill_dirs}; do
         if [ -e "${union}/${x}" ]; then
@@ -496,16 +507,13 @@ command_install () {
         fi
    done
 
-   #  删除除zh_CN外的语言文件
-   find ${moduledir}/*/usr/share/locale/* -maxdepth 0 -type d ! -iregex ".*zh.CN" -exec rm -rf {} \;
-   find ${moduledir}/*/usr/share/X11/locale/* -maxdepth 0 -type d ! -iregex ".*zh.C*" -exec rm -rf {} \;
+   echo "删除zh_CN外的语言文件"
+   #find ${moduledir}/*/usr/share/locale/* -maxdepth 0 -type d ! -iregex ".*zh.CN" -exec rm -rf {} \;
+   #find ${moduledir}/*/usr/share/X11/locale/* -maxdepth 0 -type d ! -iregex ".*zh.C*" -exec rm -rf {} \;
+   for tmp in "$(find ${moduledir}/*/usr/*/locale/* -maxdepth 0 -type d ! -iregex .*zh.CN)"; do rm -rf $tmp; done
 
-   #  删除除zh_CN及英文外的帮助文件
-   find ${moduledir}/*/usr/share/man/* -maxdepth 0 -type d ! -name "man*" ! -iregex ".*zh.CN" \
-		-exec rm -rf {} \;
-
-   # 删除arch软件仓信息数据库
-   rm -rf ${moduledir}/*/var/lib/pacman/sync/*
+   echo "删除zh_CN及英文外的帮助文件"
+   for tmp in "$(find ${moduledir}/*/usr/share/man/* -maxdepth 0 -type d ! -name man* ! -iregex .*zh.CN)"; do rm -rf $tmp; done
 
    # 备份Arch原始启动关机脚本，以便Larchin安装
    for larchsavefile in ${moduledir}/$(cat ${CONFIG_FILE} | grep "base")/etc/{rc.sysinit,rc.shutdown,rc.local}; do
