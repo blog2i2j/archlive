@@ -8,7 +8,7 @@
 # 2、从指定googlecode SVN或者hg仓库检出
 # 2、将本地修改的更新回googlecode指定项目的svn或者hg仓库
 #
-
+#----2009-08-22更新： 让hg push的时候如果不成功则不停尝试——Googlecode的Broken pipe问题
 #----2009-07-09更新： 加入wiki hg仓库的支持
 #----2009-07-04更新： 将googlecode用户信息存放到~/.googlecode下
 #
@@ -210,10 +210,16 @@ do_update ()
 # 将本地hg仓库的修改提交到googlecode hg仓
 do_push ()
 {
-	checkuser
-	#hg addremove
-	hg ci -u ${UserName} -m "由${UserName}于$(date +%F" "%T)更新: $MESSAGE"
+   checkuser
+   #hg addremove
+   hg ci -u ${UserName} -m "由${UserName}于$(date +%F" "%T)更新: $MESSAGE"
+   i=1
+   while true; do
+	echo "第$i次push"
 	hg push https://${UserName%@gmail.com}%40gmail.com:$Passwd@${Project_Name}.googlecode.com/hg
+	[ $? -eq 0 ] && break
+	let i+=1
+   done
 }
 
 if [ "${command_name}" = "upload" ]; then do_upload; fi
