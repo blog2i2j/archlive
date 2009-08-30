@@ -212,7 +212,7 @@ do_push ()
 {
    checkuser
    #hg addremove
-   hg ci -u ${UserName} -m "由${username%@gmail.com}于$(date +%F" "%T)更新: $MESSAGE"
+   hg ci -u ${UserName} -m "由${UserName%@gmail.com}于$(date +%F" "%T)更新: $MESSAGE"
    i=1
    while true; do
 	echo "第$i次push"

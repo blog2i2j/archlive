@@ -3,7 +3,7 @@
 #kernel26
 # The Linux Kernel and modules    91.01MB
 #-d kernel26-archlive-mini
--d kernel26-snapshot-2.6.31
+-d kernel26-snapshot
 # Archlive定制包，包含Archlive内核及模块.加入了kernel官方补丁、gentoo及Fedora官方补丁、UTF-8中文补丁、reiser4补丁.
 # 91.01MB
 #
@@ -14,7 +14,7 @@
 #
 #-d sqlzma
 # Archlive定制包，兼容以前的模块，兼容slax、bt的程序模块
--d squashfs-2.6.31
+-d squashfs
 # squashfs 4.0 archlive定制，包含squashfs-tools, 无法打开以前的archlive模块
 ##################### 常用网卡驱动程序
 -d ndiswrapper-archlive

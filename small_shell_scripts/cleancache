@@ -1,0 +1,59 @@
+#!/bin/bash
+# 本脚本来自于http://www.linuxsir.org/bbs/thread348435.html
+# 版权归原作者， 风险自己承担！ 哈
+# 
+#
+# 选择删除缓存中陈旧的包，可选择保留 N 个最新版本
+# 也许需要管理员权限，且删除前需要确认
+KEEPN=2 ### 要保留几个最新版本的包?
+IFS=$'\n'; CACHE='/var/cache/pacman/pkg'
+SED='s/\(.\{1,\}\)-\([0-9][a-z0-9\._]*-[0-9\.]\{1,\}\)/\1 \2/'
+
+echo "本脚本清理$CACHE，保留最新的$KEEPN个软件包，删除时候不会确认，如果不想继续，Ctrl+C终止执行该脚本"
+# 用 sed 将缓存中的文件名分割成“软件包名称＋空格＋其它后缀的形式，并存入数组 list
+# 如 xsel-1.2.0-1.pkg.tar.gz 在数组中就是 "xsel -1.2.0-1.pkg.tar.gz"
+# 使用下面的 ls 命令请确保文件是按名称排序
+cd "$CACHE" && list=(`ls -1 "$CACHE" | sed -e "$SED"`)
+
+for ((i=0; i<${#list[@]}; i++)); do
+	# 取得软件包名称
+	pkgname=${list[$i]% *}    
+
+	# 如果系统里没有安装此包，将其删除
+	if ! pacman -Qq $pkgname>/dev/null 2>&1; then
+		rm -rf ${list[$i]// /-}
+		continue
+	fi
+
+	# 如果出现重复的软件包名称，则更新重复计数器 dup
+	if [ "$pkgname" == "$prev" ]; then
+		let "dup++"
+	else 
+	# 如果计数器超过设置的 KEEPN，就开始清理
+		if [ ${dup:-0} -gt $KEEPN ]; then
+			echo "[$prev]: $dup packages"
+			# 确定需要处理的数组上下标 ub 和 lb，用 let 赋值更会清晰一些
+			ub=$(($i-1)); lb=$(($i-$dup))  
+
+			# 用冒泡法将要处理的数组元素排序，版本旧的在前
+			# 如够偷懒可以不排序，按修改时间判断包的新旧，可能不准
+			for ((x=$lb; x<$ub; x++)); do
+				for ((y=$ub; y>$x; y--)); do
+					vercmp "${list[$y]// /-}" "${list[$(($y-1))]// /-}" > /dev/null
+					if [ $? -lt 0 ]; then
+						t="${list[$y]}"
+					   	list[$y]="${list[$(($y-1))]}"
+						list[$(($y-1))]="$t"
+					fi
+				done
+			done
+
+			# 排序好之后，清理掉多余的包
+			for ((z=0; z<$(($dup-$KEEPN)); z++)); do
+				rm -rf "${list[$(($lb+$z))]// /-}"
+			done
+		fi
+		dup=1 # 重置计数器 dup
+	fi
+	prev="$pkgname" # 记录上一个包的名称
+done

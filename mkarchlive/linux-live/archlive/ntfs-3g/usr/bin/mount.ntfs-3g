@@ -1,6 +1,0 @@
-ntfs-3gy terminates after calling 'umount'. If you wish this
-         message to disappear then you should upgrade to at least kernel
-         version 2.6.20, or request help from your distribution to fix
-         the kernel problem. The below web page has more information:
-         http://ntfs-3g.org/support.html#fuse26
-

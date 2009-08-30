@@ -1,646 +1,1710 @@
-### 基本模块，core, 及网络相关程序
+#-d kernel26-firmware
+# The included firmware files of the Linux Kernel  0.99MB
+#kernel26
+# The Linux Kernel and modules    91.01MB
+#-d kernel26-archlive-mini
+-d kernel26-snapshot-2.6.31
+# Archlive定制包，包含Archlive内核及模块.加入了kernel官方补丁、gentoo及Fedora官方补丁、UTF-8中文补丁、reiser4补丁.
+# 91.01MB
+#
+#-d aufs2-git
+# Archlive定制包，如果内核不包含aufs模块则选择此包
+-d aufs2-util-git
+# Archlive定制包，如果内核包含aufs模块则选择此包
+#
+#-d sqlzma
+# Archlive定制包，兼容以前的模块，兼容slax、bt的程序模块
+-d squashfs-2.6.31
+# squashfs 4.0 archlive定制，包含squashfs-tools, 无法打开以前的archlive模块
+##################### 常用网卡驱动程序
+-d ndiswrapper-archlive
+# Archlive 编译包, 内核驱动模块及ndiswrapper-utils
+#
+#-d madwifi-utils
+#-d madwifi
+#-d rt2500 #内核已经包含 分rt2500pci  rt2500usb rt2400 同样，rt61pci rt73usb也包含于内核中
+# 等Arch官方更新
+#
+-d rt2x00-rt61-fw
+-d rt2x00-rt71w-fw
+-d iwlwifi-3945-ucode
+-d iwlwifi-4965-ucode
+-d iwlwifi-5000-ucode
+-d b43-fwcutter
+-d ipw2100-fw
+-d ipw2200-fw
+-d tiacx-firmware
+#-d tiacx
+# 等Arch官方更新
+-d zd1211-firmware
+############## base 软件组包含 (490.11MB)
+#busybox
 kernel-headers
-busybox
+# Kernel headers sanitized for use in userspace   3.88MB  基本库
 tzdata
+# Sources for time zone and daylight saving time data  5.34MB  基本库
 glibc
-ncurses
-readline
-bash
-findutils
-gzip
-texinfo
-gawk
-gcc-libs
-pcre
-grep
-db
-zlib
-cracklib
-pam
-shadow
+# GNU C Library  31.59MB  最基本库  必须保留  (Archlive精简版，只有中文支持，14.2MB）
 attr
+# Extended attribute support library for ACL support 0.37MB  基本库
 acl
-coreutils
-sed
-e2fsprogs
-util-linux-ng
-#udev
-archinit-udev-svn
-inetutils
-net-tools
-kbd
-sysvinit
-#initscripts
-archinit-svn-cn
-#
-tar
+# Library for filesystem ACL support  0.57MB  基本库
 bzip2
-#
-#### for kernel26
-module-init-tools
-klibc
-klibc-extras
-klibc-udev
-gen-init-cpio
-klibc-module-init-tools
-klibc-kbd
-filesystem
-cnlocale
-mkinitcpio
-kernel26-archlive
-cpio
-device-mapper
-lzo2
-grub-gfx
-lilo
-run-parts
+# A high-quality data compression program 0.25MB  基本工具
+zlib
+# A compression/decompression Library 0.30MB  基本库
+ncurses
+# System V Release 4.0 curses emulation library 8.96MB   基本库
+readline
+# GNU readline library   1.05MB   基本库
+bash
+# The GNU Bourne Again shell 1.05MB  基本工具
 gdbm
-#perl
+# GNU database library  0.14MB  基本库   zsh 等需要此库
+gcc-libs
+# Runtime libraries shipped by GCC for C and C++ languages  7.05MB  基本库
+pcre
+# gdbm gcc-libs
+#  A library that implements Perl 5-style regular expressions  2.04MB  zsh glib2依赖于此库
+xz-utils
+# Newer version of lzma-utils   0.44MB   基本工具
+cracklib
+#  Password Checking Library 0.20MB  基本库  (pam需要)
+db
+# The Berkeley DB embedded database system  9.96MB  基本系统 python等依赖于此包
+pam
+# PAM (Pluggable Authentication Modules) library 1.99MB  基本库
+shadow
+# Shadow password file utilities   3.81MB   基本工具
+gmp
+# A free library for arbitrary precision arithmetic 1.38MB
+coreutils
+# The basic file, shell and text manipulation utilities of the GNU operating system  11.60MB  
+#  基本工具  sysinit udev等依赖于此包
+# 用busybox代替
+perl
+# Practical Extraction and Report Language   38.05MB   automake, git, fvwm等依赖于此包
 openssl
-ca-certificates
-libgpg-error
-libgcrypt
-popt
-cryptsetup
-dash
-dcron
-dhcpcd
-file
-gettext
-#hdparm用在rc.local中
-hdparm
-hwdetect
-laptop-mode-tools
-# smartctl  用在rc.local中 
-smartmontools
-iputils
-less
-#man-db
-#man-pages
-#
-nano
-#### for pacman
-#libarchive
-#libdownload
-pacman-mirrorlist
-pacman
-#
-pciutils
-sysfsutils
-#
-libpcap
-ppp
-#
-procinfo
-procps
-reiserfsprogs
-ntfsprogs
-ntfs-3g
-#
-#libaal
-#reiser4progs
-#
-jfsutils
-xfsprogs
-#hfsprogs
-dosfstools
--d mtools
-#
-#### for sshfs
-#fuse
-#glib2
-#tcp_wrappers
-#heimdal
-#openssh
-#sshfs
-#
-＃sdparm
-#
-logrotate
-syslog-ng
-#
-libusb
-usbutils
-#
-#vi
-#
-wget
-which
-#
-expat
-dbus-core
-#
-pkgconfig
-#
-#live-tools
-syslinux
-#
-aufs2-utils-git
-#
-sqlzma
-sqlzma-tools
-lzma-utils
-#squashfs-tools
-#unionfs-utils
-#
-#### for hal
-#glib2
-#xcb-proto
-#xproto
-#libxdmcp
-#libxau
-#libxcb
-#libx11
-#libice
-#libsm
-#dbus
-#dbus-glib
-#hal-info
-#eject
-#libsmbios
-#dmidecode
-#libx86
-#vbetool
-#pm-utils
-#policykit
-#consolekit
-hal
-#
-acpi
-acpid
-libstdc++5
-acpitool
-#
-python
-dbus-python
-#fam
-gamin
-#
-wpa_supplicant
-#
-wireless_tools
-netcfg
-libtool
-dhclient
-#ethtool
-ndiswrapper-utils
-ndiswrapper-kernel_2.6.29
-madwifi-utils
-madwifi
-rt2500
-rt2x00-rt61-fw
-rt2x00-rt71-fw
-iwlwifi-3945-ucode
-iwlwifi-4965-ucode
-iwlwifi-5000-ucode
-b43-fwcutter
-ipw2100-fw
-ipw2200-fw
-tiacx-firmware
-tiacx-svn
-zd1211-firmware
-htop
+# The Open Source toolkit for Secure Sockets Layer and Transport Layer Security  7.95MB  xchat python等依赖此包
+libarchive
+# library that can create and read several streaming archive formats  1.10MB
+#libfetch
+# URL based download library  0.18MB 取消此包，选择其分支 libdownload
+#licenses
+# The standard licenses distribution package  0.46MB
+tcp_wrappers
+# Monitors and Controls incoming TCP connections 0.19MB   esound,inetutils,openssh,xinetd依赖于此包
+vi
+# a highly configurable, improved version of the vi text editor (basic version) 1.15MB
+# 用busybox代替
+findutils
+# GNU utilities to locate files 1.41MB   mkinitcpio等依赖于此包
+# 用busybox代替
+gzip
+# GNU compression utility 0.21MB  mkinitcpio等依赖于此包
+# 用busybox代替
+texinfo
+# Utilities to work with and produce manuals, ASCII text, and on-line documentation from a single source file
+# 2.28MB                  tar time which 等依赖此包
+# tar等用busybox来代替
 gpm
-sudo
-rsync
-links
-#prozilla
-c-ares
+# A mouse server for the console and xterm 0.40MB  jed links等依赖此包
+#vim
+# a highly configurable, improved version of the vi text editor    29.86MB
+#binutils
+# A set of programs to assemble and manipulate binary and object files  9.91MB 编译需要，被gcc依赖，放到dev模块
+cpio
+# A tool to copy files into or out of a cpio or tar archive  0.40MB
+# 用busybox代替
+device-mapper
+# Device mapper userspace library and tools   0.97MB
+e2fsprogs
+# Ext2/3/4 filesystem utilities  3.46MB
+libgpg-error
+# Support library for libgcrypt  0.19MB
+libgcrypt
+# a general purpose crypto library based on the code used 0.93MB
+popt
+#  A commandline option parser   0.49MB
+cryptsetup
+# Userspace setup tool for transparent encryption of block devices using the Linux 2.6 cryptoapi
+# 1.15MB
+#dash
+# A POSIX compliant shell that aims to be as small as possible  0.14MB
+filesystem
+# Base filesystem 0.34MB            基本系统，mkinitcpio依赖于此包
+expat
+# An XML Parser library written in C 0.50MB  基本库  python等依赖此库
+dbus-core
+# Freedesktop.org message bus system  1.02MB
+dcron
+# cron implementation which does not assume that your system is running all the time 0.05MB
+# logrotate 依赖此包
+# 用busybox代替
+#logrotate
+# Rotates system logs automatically  0.09MB
+dhcpcd
+# RFC2131 compliant DHCP client daemon   0.20MB  wicd netcfg依赖于此包
+dialog
+# A tool to display dialog boxes from shell scripts  0.15MB   alsa-utils archlinux-installer依赖此包
+diffutils
+#  Utility programs used for creating patch files  0.71MB   yaourt 等依赖此包
+# 用busybox代替
+patch
+# 用busybox代替
+dmapi
+#  Data migration API  0.13MB
+file
+# File type identification utility  2.03MB
+gawk
+# Gnu version of awk  1.97MB
+gen-init-cpio
+# Program to compress initramfs images  0.02MB
+#gettext
+# GNU internationalization library  15.38MB   blender perl-locale-gettext依赖此包 
+grep
+#  A string search utility   0.78MB
+#groff
+# GNU troff text-formatting system 19.04MB   man-db依赖此包
+#man-pages
+# Linux man pages    14.53MB
+#man-pages-zh
+# groff-utf8  An extension of groff that permits to view UTF-8 encoded man pages.
+# Man pages for Chinese  
 #
+sed
+# GNU stream editor   0.78MB
+# 用busybox代替
+lilo
+#grub
+# A GNU multiboot boot loader 0.55MB
+#grub-gfxmenu
+# A GNU multiboot boot loader with gfxmenu patch from openSUSE
+# grub-gfsmenu依赖于ncurses, 编译依赖于gfxboot等 后者依赖于 perl-html-tagset  perl-html-parser nasm (14.58MB)
+grub-quiet
+# 来自于ubuntu 包含ext4的支持
+hdparm
+# A shell utility for manipulating Linux IDE drive/driver parameters  0.11MB
+kbd
+# Keytable files and keyboard utilities  3.19MB   基本包
+net-tools
+# Configuration tools for Linux networking 0.42MB
+util-linux-ng
+# Miscellaneous system utilities for Linux  5.10MB  基本包  udev sysvinit 依赖于此包
+##################启动相关
+###标准： udev sysvinit  initscripts    ###archinit快速启动: sysvinit archinit-udev-svn archinit-svn-cn
+###Chakra: udev chakra-sysvinit chakra-initscripts
+sysvinit
+# Linux System V Init  0.27MB
+#chakra-sysvinit
+# Linux System V Init, with a patched killall5 to enable omission of specified pids   0.26MB
+udev
+# The userspace dev tools (udev)    0.74MB
+#archinit-udev-svn
+# The userspace dev tools (udev), with ArchInit improvements 0.79MB
+initscripts
+# System initialization/bootup scripts, standard one.  0.10MB 
+#archinit-svn-cn
+#A set of alternative system initialization/bootup programs for improved performance  0.42MB
+#chakra-initscripts
+# System initialization/bootup scripts   0.12MB
+##################
+iputils
+# IP Configuration Utilities (and Ping) 0.22MB
+jfsutils
+# JFS filesystem utilities   0.98MB
+klibc
+# A minimal libc made for early-userspace 15.09MB   基本包
+klibc-extras
+# Extra apps for klibc early-userspace   0.04MB
+klibc-kbd
+# Keytable files and keyboard utilities  0.10MB
+klibc-module-init-tools
+# Utilities for inserting and removing modules from the Linux kernel 0.08MB
+klibc-udev
+# udev compiled for klibc   0.25MB
+mkinitcpio
+# Advanced, modular initramfs image creation utility  0.13MB
+module-init-tools
+# utilities needed by Linux systems for managing loadable kernel modules 0.70MB
+less
+# A terminal based program for viewing text files  0.20MB
+libdownload
+#  URL based download library, forked from libfetch  0.11MB
+libpcap
+# A system-independent interface for user-level packet capture  0.86MB
+libusb
+# Library to enable user space application programs to communicate with USB devices  0.16MB
+lvm2
+# Logical Volume Manager 2 utilities  2.05MB
+lzo2
+# Portable lossless data compression library written in ANSI C  0.49MB
+#mailx
+# A commandline utility for sending email   0.15MB
+#
+mdadm
+# A tool for managing/monitoring Linux md device arrays, also known as Software RAID  0.91MB
+mlocate
+# Faster merging drop-in for slocate  0.41MB
+nano
+# Pico editor clone with enhancements  1.12MB
+pacman-mirrorlist
+# Arch Linux mirror list for use by pacman 0.02MB
+pacman
+# A library-based package manager with dependency support  1.62MB
+pciutils
+# PCI bus configuration space access library and tools 0.87MB
+sysfsutils
+# System Utilities Based on Sysfs  0.16MB
+#pcmciautils
+# Utilities for inserting and removing PCMCIA cards  1.11MB
+ppp
+# A daemon which implements the PPP protocol for dial-up networking 0.82MB
+procinfo
+# Displays useful information from /proc  0.08MB
+procps
+# Utilities for monitoring your system and processes on your system 0.55MB
+psmisc
+# Miscellaneous procfs tools  0.45MB
+reiserfsprogs
+# Reiserfs utilities 1.00MB
+#rp-pppoe
+# Roaring Penguin's Point-to-Point Protocol over Ethernet client 0.23MB
+# Archlive仓里的rp-pppoe-gui已经包含rp-pppoe 所以此处不装
+sdparm
+# An utility similar to hdparm but for SCSI devices  0.20MB
+syslog-ng
+# Next-generation syslogd with advanced networking and filtering capabilities  1.92MB
+# 用busybox代替
+tar
+# Utility used to store, backup, and transport files  2.26MB
+# 用busybox代替
+usbutils
+# USB Device Utilities 0.43MB
+wget
+#  A network utility to retrieve files from the Web  1.32MB   (hwd yaourt依赖于此包)
+# 用busybox代替
+which
+# A utility to show the full path of commands  0.03MB
+libnl
+# Library for applications dealing with netlink sockets 0.47MB
+wpa_supplicant
+# A utility providing key negotiation for WPA wireless networks 0.58MB
+xfsprogs
+# XFS filesystem utilities    2.93MB
+################################################### 以上为base软件组
+# 压缩格式支持
+# 新Arch采用xz-utils取代lzma-utils
+#lzma-utils
 unrar
 unzip
+# 用busybox代替
+zip
+arj
+lha
+lzop
 p7zip
-time
-tree
+# A command-line port of the 7zip compression utility   3.64MB
+cnlocale
+# Archlive定制，中文locale
+wireless_tools
 #
+speedtouch
+# Driver for the ADSL Speed Touch USB modem   0.35MB
+############以下包被hal依赖  (总15.45MB)
+glib2
+# Common C routines used by GTK+ 2.4 and other libs   8.92MB
+dbus-glib
+# GLib bindings for DBUS    0.64MB
+hal-info
+# Hardware Abstraction Layer information files   0.45MB
+eject
+#  Eject is a program for ejecting removable media under software control   0.22MB
+# 用busybox代替
+dmidecode
+# Desktop Management Interface table related utilities  0.16MB
+libx86
+# Provides an lrmi interface that works on x86, am64 and alpha   0.05MB
+vbetool
+# vbetool uses lrmi in order to run code from the video BIOS  0.06MB
+pm-utils
+# Utilities and scripts for suspend and hibernate power management   0.25MB
+policykit
+# Application development toolkit for controlling system-wide privileges  1.89MB
+consolekit
+# A framework for defining and tracking users, login sessions, and seats 0.48MB
+hal
+#  Hardware Abstraction Layer    
+# 系统休眠相关
 tuxonice-userui
-# 无线网路密码破解工具
-aircrack-ng-svn
+# TuxOnIce userspace user interface  1.98MB
+# 
+# 系统检测相关
+acpi
+#Linux ACPI client providing battery, AC power, and thermal readings  0.04MB
 #
-cdrkit
-#development
-#base-devel-deps
+laptop-mode-tools
+#Laptop mode is a kernel mode that allows you to extend the battery life of your laptop 0.20MB
 #
-#neon
-#perl-error
-mpfr
-#nasm
+lm_sensors
+# Collection of user space tools for general SMBus access and hardware monitoring.  0.46MB
+smartmontools
+# Control and monitor S.M.A.R.T. enabled ATA and SCSI Hard Drives.  0.49MB
+hddtemp
+# Gives you the temperature of your hard drive by reading S.M.A.R.T. information  0.07MB
+#
+powertop
+# Tool that finds the software that makes your laptop use more power than necessary 0.39MB
+#
+dmraid
+# Device mapper RAID interface  1.13MB
+#lshwd
+# lists hardware and approp modules
+#
+hwdetect
+# Hardware detection script with loading modules and mkinitcpio.conf / rc.conf support
+#
+bc
+# An arbitrary precision calculator language  0.23MB  chakra-hardware-detection: 要求 bc
+# 分区、文件系统相关支持
+fuse
+ntfs-3g
+dosfstools
+progsreiserfs
+ntfsprogs
+#
+#sshfs
+#sqlite3 heimdal openssh 
+# FUSE client based on the SSH File Transfer Protocol. 10.49MB
+#
+#  文件系统检测等
+#fam
+#portmap
+# File Alteration Monitor - used by KDE, GNOME and others  0.33MB
+gamin
+# Gamin is a file and directory monitoring system defined to be a subset of the FAM (File Alteration Monitor) system.
+#    0.16MB
+#
+######################## 基本网络配置工具
+xinetd
+# xinetd is a secure replacement for inetd 0.25MB
+#
+netkit-bsd-finger
+# bsd-finger ported to Linux    0.09MB
+#
+dhclient
+# dhclient is standalone client from the dhcp package   0.48MB
+#
+ethtool
+# gkernel ethtool   0.11MB
+#
+inetutils
+# A collection of common network programs  0.62MB
+linux-atm
+iproute2
+netcfg
+#依赖于 wireless_tools linux-atm iproute2
+# Network configuration and profile scripts    0.17MB
+# Dr.COM认证程序
+#drcom
+#
+##################### live 系统必须工具
+# syslinux 依赖于  (3.52MB)
+xproto
+libice
+libsm
+mtools
+syslinux
+#依赖于xproto  libice  libsm mtools
+#dvd+rw-tools
+#
+#cdrdao
+# 依赖于 lame libmad libogg libvorbis alsa-lib libao
+# Records audio/data CD-Rs in disk-at-once (DAO) mode  7.15MB
+# 用mkarchlive制作archlive需要此包
+#
+#################### 基本命令行工具
+#zsh
+# A very advanced and programmable command interpreter (shell) for UNIX   6.94MB
+time
+# 用busybox代替
+tree
+sudo
+htop
+parted
+#vim
+# a highly configurable, improved version of the vi text editor   29.86MB
+#
+pmount
+# mount removable devices as normal user  0.44MB
+#
+#mc
+# mc 命令行界面的资源管理软件 8.25MB 依赖于slang
+#screen
+# Full-screen window manager that multiplexes a physical terminal  0.82MB
+#
+links
+# A text WWW browser, similar to Lynx   1.04MB
+rsync
+# A file transfer program to keep remote files in sync  0.48MB
+glib
+xdelta
+# 依赖于 glib
+# Used to identify differences between files similar to rsync  0.99MB
+#
+#lftp
+# 依赖于 libtash1 gnutls   总7.75MB
+# Sophisticated command line based FTP client   1.29MB
+#aif
+#The ArchLinux Installation Framework  0.25MB
+#
+# dbus-python python 62.69MB
+python
+# A high-level scripting language    61.76MB
+dbus-python
+# Python bindings for DBUS 0.93MB, wicd 依赖于dbus-python
+#
+################### 一些基本编译开发工具
+#bc    前面已经加上
+# An arbitrary precision calculator language  0.23MB  chakra-hardware-detection: 要求 bc
+######base-devel 包含： （86.99MB)
+#ed
+# A POSIX-compliant line editor  0.11MB
+#binutils
+# A set of programs to assemble and manipulate binary and object files  9.91MB
+# gcc 需要此包
+libtool
+# A generic library support script  2.47MB 
+# aircrack-ng-svn 等需要此包
+pkgconfig
+# A system for managing library compile/link flags 0.10MB
 #m4
-#diffutils
+# m4 macro processor 0.25MB  autoconf依赖于此包
 #autoconf
+# A GNU tool for automatically configuring source code   2.55MB
 #automake
+# A GNU tool for automatically creating Makefiles  1.80MB
 #bin86
 #bison
-#ed
 fakeroot
+# Gives a fake root environment, useful for building packages as a non-privileged user  0.12MB
 #flex
-binutils
-#
-# gcc 79.44MB
 #ppl
 #cloog-ppl
-gcc
+#gcc
 make
-patch
+#######################
+yaourt
+# A Pacman frontend with more features and AUR support 0.33MB
+#
+neon
+# HTTP and WebDAV client library with a C interface 1.16MB  subversion依赖于此软件
+#
+perl-error
+# Perl/CPAN Error module - Error/exception handling in an OO-ish way 0.07MB  git依赖于此软件
+#
+#mpfr
+# multiple-precision floating-point library 0.97MB   gcc 依赖于此软件
+#
+#nasm
+# 80x86 assembler designed for portability and modularity 0.79MB   目前测试无须此包
+#
+libxml2
+# XML parsing library, version 2   10.99MB   conky openbox 等以来此库
+###################
 #
 abs
+# Utilities to download and work with the Arch Build System (ABS)   0.12MB
+#git
+#GIT - the stupid content tracker  13.62MB
 #
-# git 14.93MB
-curl
-perl-error
-git
+#cvs 
+#Concurrent Versions System - a source control system 1.49MB
 #
-#### for subversion  37.66MB
-#neon
-#apr
-#libsasl
-#libldap
-#unixodbc
-#apr-util
-subversion
-#
-#
-cvs
-scons
-yaourt-git
-aurvote
+# scons extra  SCons is an open source software contruction tool that is a substitute for make.3.95MB
+#scons
 pacbuilder-svn
-#
-#licenses
-#namcap
-devtools
+# A tool to massively recompile archlinux packages from sources   0.10MB
+#devtools
+# namcap
+# A few tools to help Arch Linux developers   0.10MB
 aurtools
+# Tools for TUs and Developers for manipulating the community repo   0.01MB
 pkgtools
-fontconfig
-xorg-input-drivers
-xorg-video-drivers
+# A collection of scripts for Arch Linux packages  0.14MB
 #
-# xorg-fonts-100dpi 19.05MB
-#libfontenc
-#fontsproto
-#libxfont
-#xorg-font-utils
-#xorg-fonts-encodings
-#xorg-fonts-alias
-#xorg-fonts-100dpi
+#gdb
+# gdb extra The GNU Debugger   7.55MB
 #
-#  15.59MB
-#xorg-fonts-75dpi
-#libice
-#libsm
+#distcc
+# 依赖于 mpfr ppl cloog-ppl
+# A distributed C, C++, Obj C compiler  0.62MB  依赖于gcc
+#
+#bzr
+# A decentralized revision control system  23.0MB
+#mercurial
+# mercurial A scalable distributed SCM tool  5.73MB
+################### 数据维护工具
+#ddrescue
+# GNU data recovery tool   0.12MB
+#
+#foremost
+# A console program to recover files based on their headers, footers, and internal data structures.  0.11MB
+#
+#libjpeg
+#testdisk
+#依赖于 progsreiserfs fuse ntfsprogs libjpeg 
+#Tool to check and undelete partition and recover pictures from digital camera memory  4.58MB
+#
+#sleuthkit
+# File system and media management forensic analysis tools (supports NTFS, FAT, UFS1/2, FFS, Ext2 and Ext3)
+#  6.77MB
+################# 高级网络工具及安全相关
+#vorbis-tools
+# run-parts ca-certificates curl flac
+# Extra tools for Ogg-Vorbis    4.42MB
+#
+openssh
+# sqlite3   heimdal
+# A Secure SHell server/client  1.85MB
+#
+openvpn
+# An easy-to-use, robust, and highly configurable VPN (Virtual Private Network)  0.59MB
+#
+#wireless-regdb iw
+#crda
+#Central Regulatory Domain Agent  0.09MB
+#
+dnsutils
+# Various DNS utilities - dig host nslookup nsupdate  5.50MB
+#gnu-netcat
+# GNU rewrite of netcat, the network piping application  0.09MB
+#
+# elinks
+#lua libidn nspr spidermonkey
+# An advanced and well-established feature-rich text mode web browser.
+#
+# irssi
+#Modular text mode IRC client with Perl scripting   3.89MB
+#nmap
+# A network exploration tool and security/port scanner  0.12MB
+#
+#rdiff-backup
+# librsync
+#A utility for local/remote mirroring and incremental backups  1.50MB
+#
+#rsnapshot
+# A remote filesystem snapshot utility 0.27MB
+#
+lsof
+# lsof (LiSt Open Files) lists information about files that are open by the running processes  0.19MB
+#
+#gmime
+# Core mime parsing library  1.28MB
+#
+#tcpdump
+# A tool for network monitoring and data acquisition  1.23MB
+#
+#tcpflow
+# Captures data transmitted as part of TCP connections then stores the data conveniently. 0.04MB
+#
+#libevent 
+# An event notification library0.67MB
+#tor
+# TOR Client 依赖于libevent 3.21MB
+#
+#inputproto
+#xextproto
+#xcb-proto
+#libxdmcp
+#libxau
+#kbproto
+#libx11
+#libxext
 #libxt
 #libxmu
-#libxpm
-#libxaw
-xorg-res-utils
+#dsniff
+# 依赖于 inputproto xextproto libxext libxt libxmu
+# Collection of tools for network auditing and penetration testing. 4.23MB
+#
+#ipcheck
+# A simple python script to register your dynamic IP address using the NIC V2.0 protocol  0.17MB
+#
+#ipguard
+# ipguard - arp<->ip relation checking tool  0.07MB
+#
+macchanger
+# A small utility to change you NIC's MAC address  0.23MB
+#
+#netcount
+# network statistic and monitor tools  0.11MB
+#
+#netbrake
+# Netbrake is an utility to limit the bandwidth used by a process 0.04MB
+#
+#vnstat
+# network traffic monitor for Linux that keeps a log of daily network traffic for the selected interface(s)  0.20MB
+#
+#rtorrent
+# libsigc++2.0-2.2.3-1  libtorrent-0.12.2-2  xmlrpc-c
+#  Ncurses BitTorrent client based on libTorrent  19.48MB
+#
+#aesfix
+# A tool to find AES key in RAM  0.07 MB
+#
+#aeskeyfind
+# A tool to find AES key in RAM  0.04MB
+#
+#aircrack-ng-svn
+# Wifi security suite - WEP / WPA crack tools -- with SQLite3.  1.25MB
+#
+#airoscript
+# Shell script designed to ease the use of aircrack-ng  0.38MB
+#
+#autopsy
+# The Autopsy Forensic Browser is a GUI for The Sleuth Kit. 1.27MB
+#
+#bob-the-butcher
+# a distributed password cracker package  0.40MB
+#
+#chntpw
+# Utility to (re)set the password of any user that has a valid (local) account on Windows NT/2K/XP system  0.11MB
+#
+#cmospwd
+# CmosPwd decrypts password stored in cmos used to access BIOS SETUP. 0.04MB
+#
+#cowpatty
+# Wireless WPA/WPA2 PSK handshake cracking utility  0.04MB
+#
+#elettra
+# libmcrypt mhash
+# Encryption utility by Julia Identity   0.88MB
+#
+#g72x++
+# Decoder for the g72x++ codec  0.04MB
+#
+#iodine
+# Lets you tunnel IPv4 data through a DNS server. 0.10MB
+#
+#kismet-newcore-svn
+# libcap
+# Next generation of the wireless network sniffer  3.76MB
+#
+#lorcon
+# Create what libradiate could have been: A generic library for injecting 802.11 frames, capable of injection via multiple driver frameworks, without
+# forcing modification of the application code.  0.24MB
+#
+#lynis
+# Lynis is an auditing tool for Unix (specialists)  0.51MB
+#
+#matahari
+# pycrypto 
+# A reverse HTTP shell to execute commands on remote machines behind firewalls.  0.71MB
+#
+#mdk3
+# WLAN penetration tool 0.12MB
+#
+#memfetch
+# dumps any userspace process memory without affecting its execution  0.03MB
+#
+#netdiscover
+# libnet 
+# Netdiscover is an active/passive address reconnaissance tool, mainly developed for those wireless networks without dhcp server, when you are
+# wardriving. It can be also used on hub/switched networks.  0.85MB
+#
+#nikto
+# perl-net-ssleay
+# Nikto is a web server scanner which performs comprehensive tests against web servers for multiple items 3.40MB
+#
+#
+#p0f
+# passive OS fingerprinting tool  0.15MB
+#
+#passcracking
+# A little python script for sending hashes to passcracking.com and milw0rm  0.02MB
+#
+#radare-hg
+# A collection of tools with the aim to create a complete, portable, multi-architecture, unix-like toolchain for reverse engineering.
+#  2.30MB
+#
+#rainbowcrack
+# Password cracker based on the faster time-memory trade-off. Additional patches (NTLM, MD2, MD4, RIPEMD160, MySQL and Cisco PIX) included.
+# 0.20MB
+#
+#ratproxy
+# A passive web application security assessment tool 0.23MB
+#
+#rsakeyfind
+# A tool to find RSA key in RAM 0.04MB
+#
+#samdump2
+# Dump password hashes from a Windows NT/2k/XP installation 0.04MB
+#
+#sqlmap
+#  sqlmap is an automatic SQL injection tool developed in Python 1.52MB
+#
+#clamav
+# Anti-virus toolkit for Unix. 2.71MB
+#
+#foldingathome
+# Folding@Home is a distributed computing project which studies protein folding, misfolding, aggregation, and related diseases.
+#  0.30MB
+############### WEB 服务器
+#apache
+# apr libsasl libldap unixodbc apr-util
+# A high performance Unix-based HTTP server  9.67MB
+#
+#lighttpd
+# a secure, fast, compliant and very flexible web-server  0.86MB
+# 
+#gnump3d
+# A streaming server for MP3s, OGG vorbis files, movies and other media formats. 2.39MB
+#############   CUPS
+#cups
+# openslp libtiff libpng libcups xdg-utils xcb-proto libxdmcp libxau libxcb kbproto libx11 dbus libcap libdaemon avahi freetype2 fontconfig
+# renderproto libxrender pixman xcb-util cairo libxml2 openjpeg poppler
+#The CUPS Printing System   58.38MB
+############   SQL相关 (数据库相关）
+#
+#libmysqlclient
+# MySQL client libraries   31.12MB
+#mysql-clients
+# MySQL client tools   0.63MB
+#
+#mysql-python
+# MySQL support for Python 0.31MB
+#postgresql-libs
+# Libraries for use with PostgreSQL 1.41MB
+###########  其他
+#espeak
+# libsndfile jack-audio-connection-kit portaudio
+#Text to Speech engine for good quality English, with support for other languages  5.55MB
+#aspell-en
+# aspell
+# A spell checker designed to eventually replace Ispell, English dictionary for aspell
+#
+#weechat
+# ruby libtasn1 gnutls
+##### xorg-server 及其依赖 42.41MB
+#xorg-server 依赖于
+libdrm
+xf86vidmodeproto
+libxxf86vm
+fixesproto
+libxfixes
+damageproto
+libxdamage
+libgl
 libfontenc
+freetype2
 fontsproto
 libxfont
+libpciaccess
+videoproto
+libxv
+pixman
+xcursor-themes
+libxpm
+libxaw
+libxkbfile
+xorg-xkb-utils
+xkeyboard-config
 fontcacheproto
 libxfontcache
-#
-# 20.70MB
+libxi
+xf86miscproto
+libxxf86misc
+renderproto
+libxrender
+randrproto
+libxrandr
+mcpp
+xorg-server-utils
+xorg-font-utils
+xorg-fonts-encodings
+xorg-fonts-alias
+fontconfig
+xorg-fonts-misc
+xbitmaps
+xf86-input-evdev
 xorg-server
+#########################
 #
 xorg-xauth
 xorg-xinit
-#xterm
 #
-ddcxinfo-arch
-hwd
+# xterm 依赖于
+#libxft
+#libxcursor
+#libpng
+#xorg-apps
+xterm
+#
+#xorg-fonts-100dpi
+#xorg-fonts-75dpi
+xorg-res-utils
+###########################
+# xorg drivers 以下包含于xorg-video-drivers
+xf86-video-apm
+xf86-video-ark
+ati-dri
+xf86-video-ati
+xf86-video-chips
+xf86-video-cirrus
+xf86-video-dummy
+xf86-video-fbdev
+xf86-video-geode
+xf86-video-glint
+xf86-video-i128
+xf86-video-i740
+#########xf86-video-intel
+intel-dri
+libxvmc
+#####
+xf86-video-mach64
+xf86-video-mga
+xf86-video-neomagic
+xf86-video-nv
+xf86-video-r128
+xf86-video-radeonhd
+xf86-video-rendition
+xf86-video-s3
+xf86-video-s3virge
+xf86-video-savage
+xf86-video-siliconmotion
+xf86-video-sis
+xf86-video-sisusb
+xf86-video-tdfx
+xf86-video-trident
+xf86-video-tseng
+xf86-video-v4l
+xf86-video-vesa
+xf86-video-vga
+xf86-video-via
+xf86-video-vmware
+xf86-video-voodoo
+#
+scrnsaverproto
+# X11 Screen Saver extension wire protocol   0.05MB
+###
+recordproto
+# X11 Record extension wire protocol  0.07MB
+#
+libxtst
+xf86-input-synaptics
+#
+##### xorg-input-drivers组 1.85MB, 包含:
+xf86-input-acecad
+xf86-input-aiptek
+xf86-input-calcomp
+xf86-input-citron
+xf86-input-digitaledge
+xf86-input-dmc
+xf86-input-dynapro
+xf86-input-elo2300
+xf86-input-elographics
+#xf86-input-evdev  已经被xorg-server依赖安装
+xf86-input-fpit
+xf86-input-hyperpen
+xf86-input-jamstudio
+xf86-input-joystick
+xf86-input-keyboard
+xf86-input-magellan
+xf86-input-magictouch
+xf86-input-microtouch
+xf86-input-mouse
+xf86-input-mutouch
+xf86-input-palmax
+xf86-input-penmount
+xf86-input-spaceorb
+xf86-input-summa
+xf86-input-tek4957
+xf86-input-ur98
+xf86-input-vmmouse
+xf86-input-void
+#
+#
+#chakra-hardware-detection
+xakra
+# Archlive定制包，Xorg.conf由此程序产生，来自于chakra项目
+#
+dri2proto
+# X11 DRI protocol  0.06MB
+#
+mesa
+# Mesa OpenGL library 3.61MB
 #
 freeglut
-#
-#fonts
-#ttf-dejavu
+# Provides functionality for small OpenGL programs  0.66MB
+xf86dgaproto
+# X11 Direct Graphics Access extension wire protocol 0.07MB
+libxxf86dga
+# X11 Direct Graphics Access extension library     0.17MB
+#############################################################
+###################字体
+ttf-openlogos
+ttf-dejavu
+##   7.88MB
 #gsfonts
-ttf-droid
+# Ghostscript standard Type1 fonts  4.86MB
+#ttf-droid
 wqy-bitmapfont
-wqy-zenhei
-#fontsconf
-dialog
-alsa-utils
-alsa-oss
-vorbis-tools
+# 18.46MB
+#wqy-zenhei
+# 12.71MB
 #
+#fontsconf
+# 
+################### 基本X库
+libxres
+# X11 Resource extension library  0.09MB
+#
+libxevie
+# X11 EvIE extension library  0.09MB
+#
+iso-codes
+# 8.69MB
+libxklavier
+#依赖于 iso-codes High-level API for X Keyboard Extension  0.43MB
+#
+atk
+# 被gtk2所依赖
+xcb-util
+# 被startup-notification pycairo等所依赖
+cairo
+# 被linuxqq pycairo等所依赖
+libdatrie
+# 被 libthai 所依赖
+libthai
+# 被 pango 所依赖
+pango
+# 被 awesome gtk2 linuxqq openbox等所依赖
+xineramaproto
+# 被  libxinerama 所依赖
+libxinerama
+# 被 feh fluxbox gtk2 icewm openbox qt skype 等所依赖
+libtiff
+# 被 imlib imlib2 libcups qt rawstudio 等所依赖
+libcups
+# 被 epdfview fox gtk2等所依赖
+compositeproto
+# 被  libxcomposite 所依赖
+libxcomposite
+# 被 gtk2 xcompmgr 所依赖
+######
+gtk2
+# lxterminal 等依赖此包
+giflib
+# 被mtpaint icewm mplayer所依赖
+libid3tag
+# 被imlib2 gtkpod等依赖
+imlib2
+# 被awesome ffmpeg 等所依赖
+giblib
+# 被scrot feh等所依赖
+libnotify
+# Desktop notification library   0.23MB
+# 被zentify transmission vlc等所依赖
+perlxml
+# XML::Parser - an XML parser module for perl   0.50MB 
+#  lxpanel依赖于此包
+fribidi
+# 被fvwm vlc等依赖
+libstroke
+# 被fvwm依赖
+libcroco
+# 被librsvg所依赖
+libgsf
+# 被librsvg所依赖
+librsvg
+# 被fvwm gimp gdesklets 等所依赖
+#
+pycairo
+# 被pygtk所依赖
+pygobject
+# 被pygtk gstreamer0.10-python wbar-conf等所依赖
+blas
+# 被 lapack python-numpy所依赖
+lapack
+#  被 python-numpy所依赖
+python-numpy
+#  被 pygtk 所依赖
+libglade
+#  被 pygtk 所依赖
+pygtk
+# 被 comix wicd gimp 等所依赖
+#
+#################
 shared-mime-info
-startup-notification
-hicolor-icon-theme
+# Freedesktop.org Shared MIME Info  2.64MB
+#
 desktop-file-utils
+# Command line utilities for working with desktop entries   0.10MB
+#
+gtk-engines
+# Theme engines for GTK+ 2   1.72MB
+xdg-utils
+# Command line tools that assist applications with a variety of desktop integration tasks.  0.18MB
+#
+#archlinux-menus
+# Arch Linux specific XDG-compliant menu  0.07MB
+#archlinux-xdg-menu
+# automatic generate WM menu from xdg files  0.17MB
+#
+startup-notification
+# Monitor and display application startup   0.14MB
+hicolor-icon-theme
+# Freedesktop.org Hicolor icon theme  1.26MB
+#
+tango-icon-theme
+# The Tango Desktop Project exists to create a consistent user experience   13.03MB
+#tango-icon-theme-extras
+# Extra icons for Tango  2.48MB
+#gnome-icon-theme
+# Default icon theme for GNOME2
+### gnome-icon-theme 依赖于以下包，总 21.30MB
+#
+#perl-xml-simple
+# Simple XML parser for perl   0.17MB
+#
+#icon-naming-utils
+#Maps the new names of icons for Tango to the legacy names used by the GNOME and KDE desktops.  0.08MB
+#
+xdialog
+#A drop-in replacement for the 'dialog' or 'cdialog' programs  0.91MB
+#
+#libglade
+# Allows you to load glade interface files in a program at runtime   0.55MB
+#
+gtkdialog
+# Gtkdialog is a small utility for fast and easy GUI building.  0.13MB
+#
+#zenity
+# Display graphical dialog boxes from shell scripts  4.67MB
+#
+# 以下为gksu所依赖  总共20.54MB
+libidl2
+orbit2
+libsasl
+libldap
+gconf
+gnome-keyring
+libgtop libgksu
+gksu
+# A graphical frontend for su    0.10MB
 #
 slim
+# Desktop-independent graphical login manager for X11  0.50MB
+#
 #archlinux-themes-slim
-#
-xdg-utils
-archlinux-menus
-#
-perlxml
-archlinux-xdg-menu
-#
-#xdialog 48.45M
-#atk
-#cairo
-#libdatrie
-#libthai
-#pango
-#libxcursor
-#xineramaproto
-#libxinerama
-#libtasn1
-#gnutls
-#libtiff
-#libcups
-#compositeproto
-#libxcomposite
-#gtk2
-xdialog
-#
-# gksu 19.28 MB
-#libidl2
-#orbit2
-#gconf
-#gnome-keyring
-#libgtop
-#libglade
-#libgksu
-#gksu
-#
-#
-ubuntulooks
-#
+#Arch Linux themes for the SLiM login manager   0.50MB
+#xorg-twm
+# Tab Window Manager for the X Window System   0.23MB
+# 
 menumaker
+#Heuristics-driven menu generator for Deskmenu, FluxBox, IceWM, OpenBox,WindowMaker and XFCE.  0.72MB
 #
-giflib
-libid3tag
-imlib2
-giblib
+scrot
+#giflib libid3tag imlib2 giblib
+# A simple command-line screenshot utility for X    0.09MB
 #
+alsa-lib
+run-parts
+ca-certificates
+curl
+conky
+# 依赖于 run-parts ca-certificates curl
+# An advanced, highly configurable system monitor for X based on torsmo   0.27MB
 #
-#mini-desktops
-#fme
-fluxbox
-fluxconf
-#
-# fluxmenu 33.71 MB
-#pycairo
-#pygobject
-#blas
-#python-nose
-#lapack
-#python-numpy
-#pygtk
-#fluxmenu
-#
-# 锁屏程序 8.40M
-#printproto
-#libxp
-#lesstif
-#audiofile
-#esound
-xlockmore
-#
-#lua
-#libev
-#libxdg-basedir
-#awesome
-#
-#
-#glib
-#gtk
-#imlib
-icewm
-#
-# lxde 13.69M
-#lxde
-gpicview
-#lxmenu-data
-#lxappearance
-#lxde-common
-#pycairo
-#pygobject
-#blas
-#python-nose
-#lapack
-#python-numpy
-#python-numeric
-#pygtk
-#gnome-menus
-#lxlauncher
-#intltool
-#menu-cache
-#lxrandr
-openbox
-#lxsession-lite
-#lxtask
-#vte
-#desktop-file-utils
-dbus
-lxpanel
-lxterminal
-pcmanfm
-rox
-#
-gtk-kde4-oxygen-theme
-centbar
-gtk-engine-experience
+gxmessage 
+conky-archlive
+# Archlive定制包，conky的配置文件等，需要  lm_sensors hddtemp links gxmessage   
 #
 wbar
-#
-# wbarconf 34.41 MB
-#pygobject
-#pycairo
-#blas
-#python-nose
-#lapack
-#python-numpy
-#pygtk
-wbarconf
-obmenu
-obconf
-#
-rxvt-unicode
-jed
-xcompmgr
+# A quick launch bar developed with speed in mind.   0.59MB
 feh
+# feh is a fast, lightweight image viewer which uses imlib2   0.55MB
+xcompmgr
+# Composite Window-effects manager for X.org    0.07MB
+rxvt-unicode
+# an unicode enabled rxvt-clone terminal emulator (urxvt)  5.09MB
+#slang
+# S-Lang is a powerful interpreted language jed依赖于此包 3.17MB
+#jed
+# JED is a freely available text editor for Unix and other OS'  2.07MB
+#
 xkeycaps
-aria2
-scrot
-gsnapshot-cn
-#guile
-#xbindkeys
-#xbindkeys_config
-#conky
-#lm_sensors
-#hddtemp
-#gxmessage
-conky-archlive
+#XKeyCaps is a graphical front-end to xmodmap.   1.04MB
+################## 声音相关
+alsa-lib
+# An alternative implementation of Linux sound support  1.76MB
+# cdrdao 依赖
+alsa-utils
+#  An alternative implementation of Linux sound support  1.71MB
+alsa-oss
+# OSS compatibility library  0.13MB
 #
-#ethtool
+################## 小型桌面环境  fluxbox 3.71MB  awesome 2.47MB icewm 8.84MB fvwm 6.88MB
+fluxbox
+#
+# libev  libxdg-basedir lua dbus libxdg-basedir
+awesome
+#
+# gtk imlib
+icewm
+# 依赖于gtk  imlib   (Total 8.84MB)
+#
+gpicview
+# Picture viewer of the LXDE Desktop 0.33MB
+openbox
+pcmanfm
+# File manager of the LXDE Desktop  1.10MB
+#rox
+# A small and fast file manager which can optionally manage the desktop background and panels.
+# 3.84MB
+#
+vte
+# Virtual Terminal Emulator library    2.79MB   lxterminal sakra依赖于此包
+lxterminal
+# VTE-based terminal emulator (part of LXDE)  0.21MB
+#
+intltool
+menu-cache
+lxmenu-data
+lxpanel
+#依赖于 intltool menu-cache lxmenu-data
+#
+habak
+trayer
+fvwm
+# 依赖于fribidi libstroke imlib gtk
+#
+#lxde
+#obconf
+#obmenu
+#
+usbview
+# USB Viewer   0.55MB
+vnc
+# The original open-source cross-platform remote control solution (without xvnc)  0.70MB
+gtk-vnc
+# A VNC viewer widget for GTK   0.22MB
+#
+# 锁屏程序 8.40MB
+## printproto libxp lesstif audiofile esound
+#xlockmore
+#
+# fcitx-svn-ibus   56.79MB   fcitx-svn-mini 6.18MB
+fcitx-svn-mini
+# Archlive定制包,只含有智能拼音、智能双拼和五笔字型，如果需要二笔等，请用fcitx-svn-ibus 
+#
 wicd
+# 依赖于'python' 'dbus-python' 'pygtk' 'dhcpcd' 'wpa_supplicant' 'wireless_tools' 'ethtool' 'shared-mime-info'
+# New and alternative wireless/wired network management utility  2.12MB
+bluez
+# Libraries and tools for the Bluetooth protocol stack  1.88MB
 #
-# fcitx-svn ~50 MB
-fcitx-svn-ibus
+# Java 环境  >=160MB
+##ca-certificates-java
+#openjdk6
+# Free Java environment based on OpenJDK 6.0 with IcedTea6 replacing binary plugs.  151.25MB
+#jre
+# Sun's java runtime environment   110.27MB
+# 由于your-freedom 依赖于openjdk6， 所以先安装openjdk6、your-freedom 再删除openjdk6，再装回jre
+#  your-freedom 在jre下也正常工作（官方pkgbuild问题，应依赖于java-runtime）
+#### Special
+# your-freedom 2.66MB
+# ca-certificates-java  openjdk6
+your-freedom
+# 依赖安装openjdk6  151.25MB
+jre
+# 替代openjdk6安装jre以节省空间    110.27MB
+################################################常用X应用程序
+########################网络工具
+# rp-pppoe-gui 及其依赖 11.38MB
+# tcl libxss tk
+#rp-pppoe-gui
 #
-# ibus ~ 50 MB
-#ibus-git
-#ibus-pinyin-git
-#ibus-table-git
-#ibus-table-wubi-git
+#sakura
+#pppoe-conf
+# Archlive定制包
+#### chestnut-dialer, PPP dialing program
+chestnut-dialer
+# Archlive编译包
 #
-#mozilla-common
-#nspr
-#nss
-flashplugin
-#
-#parted
-#larchin-syscalls
-larchin
-#
-librsvg
-# 定制的图形界面拨号程序
-rp-pppoe-gui
-pppoe-conf
 #锐捷网络认证
 ruijieclient
+# Archlive编译包
 # 需要gnome相关支持
 #gruijieclient
-#libvncserver
+#
+drcom-pum
+# Archlive编译包 DRCOM认证程序
+#
+# 远程桌面
+# libsamplerate
 rdesktop
+# libvncserver
 grdc
-firefox-archlive
+# Archlive编译包
 #
-#  jre 109.06 MB
-#recordproto
-#libxtst
-jre
-your-freedom
-# 无线网络密码破解java图形前端
+# 局域网共享
+#
+#libcdio gvfs  6.30MB
+# gogolo-svn 0.42MB
+gigolo-svn
+# Archlive编译包, 网上邻居的最好替代品，利用gvfs文件系统
+# flashplugin及依赖  17.84MB
+# mozilla-common nspr nss
+flashplugin
+#
+# 无线网络密码破解java图形前端   1.58 + 8.24MB
 spoonwep
+# Archlive定制包
 spoonwpa
-# BT下载工具
+# Archlive定制包
+# vuze-archlive  Java写的BT下载工具 14.79MB (依赖于ca-certificates-java  openjdk6)
 #vuze-archlive
+# Archlive定制包
+##### benliud  2.61MB
 benliud
+# Archlive定制包
+#
+#transmission-svn
+# Archlive编译包
+transmission-gtk
+#
+##### amule 32.31MB
+#wxgtk gd geoip
+#amule
+##### rapidsvn-cn svn图形工具 1.42MB
+# apr unixodbc apr-util subversion
+#rapidsvn-cn
+# Archlive定制包
+#####  xchat 6.61MB
 xchat
+#####  linuxqq 6.08MB
 linuxqq
+# Archlive编译包
 #
-#qt
-#linux-fetion-svn
+#gadmin-rsync-cn
+# Archlive编译包
 #
-skype-staticqt
+#thunderbird
+#### pidgin-git  25.14MB
+pidgin-git
+# Archlive定制包
+#grsync
+#### pan,  A powerful Newsgroup Article reader based on GTK2   8.15MB
+## hunspell enchant gtkspell   
+#pan
 #
-# pidgin 51.26 MB
-#aspell
-#hunspell
-#enchant
-#gtkspell
-#gstreamer0.10
-#hicolor-icon-theme
-#libidn
-#silc-toolkit
-pidgin-archlive
-#
-# amule 44.05 MB
-#wxgtk
-#gd
-#geoip
-amule
-#
-rapidsvn-cn
-#
-leafpad
-foxitreader
-isomaster
-#
-#pil
-comix
-mtpaint-cn
-#
-# vlc-git 68.79 MB
-#libmad
-#libmpeg2
-#faad2
-#lame
-#sdl
-#libmp4v2
-#faac
-#xvidcore
-#x264
-#libtheora
-#ffmpeg
-#libsndfile
-#jack-audio-connection-kit
-#ladspa
-#fluidsynth
-#zvbi
-#libdvbpsi
-#fribidi
-#libdvdnav
-#libnotify
-#libdvdread
-#libebml
-#libmatroska
-#libcddb
-#libmpcdec
-#libmodplug
-#speex
-#sdl_image
-#libdca
-#libcap
-#libdaemon
-#avahi
-#taglib
-#sdl
-#libsm
-#libxv
-vlc-git
-#
-# mplayer-svn 77.46 MB
-#xf86dgaproto
-#libxxf86dga
-#cdparanoia
-#tdb
-#smbclient
-#aalib
-#libftdi
-#lirc-utils
-#ttf-dejavu
-mplayer-svn
-#
-#
-#libglademm
-#sopcast
-gmlive-svn
-#
-streamtuner-cn
-#
-#libmowgli
-#libmcs
-#libsamplerate
-libmms
-lirc-utils
-neon
+##### firefox-archlive已经包含ftp工具及下载工具
+#gftp
+#filezilla
+##### UrlGfe is a GTK2 download manager 0.30MB
+#urlgfe
+###################### 媒体工具
+# 影音播放
+# libmowgli   libmcs
 audacious
 audacious-plugins
 ShowLyric
 #
-#python-pexpect
-luser
+# vlc 及其依赖 57.44MB  vlc-git 23.68MB
+# libmpeg2 faad2 sdl libmp4v2  faac xvidcore x264 libtheora ffmpeg ladspa fluidsynth zvbi libdvbpsi
+# libdvdread libdvdnav libebml libmatroska  libcddb libmpcdec  libmodplug speex sdl_image libdca taglib 
+# avahi dbus libdaemon 
+vlc-git
+# Archlive定制包
+# mplayer-svn 及其依赖  24.40MB
+# cdparanoia libmng aalib libftdi  lirc-utils 
+mplayer-svn
+# Archlive定制包
 #
-#libproxy
-#libsoup
-hardinfo
+# gmlive-svn 及其依赖 79.14MB
+# libsigc++2.0 glibmm cairomm pangomm gtkmm libglademm libstdc++5 sopcast
+gmlive-svn
+# Archlive定制包
 #
-#openssh
-gadmin-rsync-cn
+#gpodder
 #
-# 59.56 MB
-#stardict-archlive
-#q7z
-# Gparted 95.58 MB
-#libsigc++2.0
-#glibmm
-#cairomm
-#pangomm
-#gtkmm
-gparted-svn
+# recordmydesktop
+gtk-recordmydesktop
+#   0.82MB
+#
+#streamripper
+#   0.15MB
+#streamtuner-cn
+#  A stream directory browser  3.09MB
+#
+## avidemux, A graphical tool to edit video (filter/re-encode/split)   27.37MB
+#avidemux
+#
+#gtkpod
+#mixxx
+# portaudio qt
+### mixxx, Digital DJ mixing software   97.28MB
+#
+lash
+### lash, A session management system for JACK and ALSA  0.68MB
+#
+# hydrogen, Drum Machine and Pattern-based Sequencer 及其依赖 104.46MB
+# libxslt raptor liblrdf qt libtar  
+#hydrogen-svn
+#
+#### elisa, An open source cross-platform media center solution  63.92MB
+# zope-interface twisted gstreamer0.10 liboil gstreamer0.10 pigment python-pigment
+# gstreamer0.10-python python-cssutils pyopenssl setuptools
+#elisa
+#
+#
+####arista, Easy to use multimedia transcoder for the GNOME Desktop  35.80MB
+# gstreamer0.10-ffmpeg libvisual gstreamer0.10-base-plugins gstreamer0.10-good libraw1394 
+# libavc1394 libiec61883 libshout libdv wavpack libproxy libsoup libv4l libcaca gstreamer0.10-good-plugins
+# gstreamer0.10-bad libusb1 libdc1394 exempi libexif libmms libcdaudio mjpegtools jasper  
+# gstreamer0.10-bad-plugins gstreamer0.10-ugly a52dec libsidplay libcdio gstreamer0.10-ugly-plugins
+#arista
+###Audacity is a program that lets you manipulate digital audio waveforms  46.04MB
+# postgresql-libs libmysqlclient redland
+#audacity
+##### Asunder is a graphical CD ripper and encoder  0.52MB
+#asunder
+#################### 图形工具
+#gimp
+#mtpaint
+#
+gsnapshot-cn
+# Archlive编译包
+#
+# pil
+#comix
+# 依赖于pil 3.04MB
+#
+#rawstudio
+# lcms exiv2 
+## rawstudio, An open source raw-image converter written in GTK+. 
+#
+####blender, A fully integrated 3D graphics creation suite   42.48MB
+## ilmbase openexr
+#blender
+#################### 应用办公
+#abiword
+#gnumeric
+#
+# poppler-glib
+#epdfview
+#
+foxitreader
+# Archlive编译包  5.49MB
+leafpad
+geany
+#####  geany  5.96MB
 xarchiver
+#  1.57MB
+#
+#xchm
+# chmlib wxgtk
+# xchm 0.74MB 及其依赖 21.48MB
+#
+#brasero
+## brasero, A disc burning application for Gnome
+#
+#meld
+## meld, Visual diff and merge tool for GNOME
+#
+isomaster
+##### CD image editor written in GTK2  0.96MB
+#homebank
+#################### 系统工具
+larchin-syscalls-svn
+# Archlive定制包，中文版
+larchin-svn
+# Archlive定制包，中文版
+gparted
+#
+luser
+# python-pexpect
+# 0.31MB
+#
+hardinfo
+#  0.64MB
+#shaman
+# 依赖于qt,  2.97MB
+#
+#pyrenamer
+# pyorbit libart-lgpl libgnomecanvas tdb smbclient gnome-mime-data gnome-vfs libbonobo libgnome
+# libbonoboui gnome-keyring libgnomeui gnome-python
+##### An application for the mass renaming of files  1.03MB   89.20MB
+#
+#unetbootin
+#依赖于qt gnome-keyring libgtop libgksu gksu  总93.30MB
+##### UNetbootin allows for the installation of various Linux/BSD livecd distributions to a partition or USB drive. 1.38MB
+#
+##### GTK+ Version of snes9x, a portable Emulator for the Super Nintento Entertainment System 3.48MB
+#snes9x-gtk
+#
+##### gcalctool GNOME Scientific calculator  7.78MB
+#gcalctool
+##### lmms The Linux MultiMedia Studio  24.21MB
+#lmms
+##### vym A mindmapping tool  6.46MB
+#vym
+##
+## Back In Time is a simple backup system for Linux inspired from 'flyback project' and 'TimeVault'.
+# backintime 及其依赖 99.94MB
+## python-notify libidl2 orbit2 pyorbit libart-lgpl libgnomecanvas gconf tdb smbclient gnome-mime-data
+# gnome-vfs libbonobo libgnome libbonoboui gnome-keyring libgnomeui gnome-python 
+#backintime
+#### Special
+# your-freedom 2.66MB
+your-freedom
+# 依赖安装openjdk6  151.25MB
+jre
+# 替代openjdk6安装jre以节省空间    110.27MB
+################################################常用X应用程序
+########################网络工具
+# rp-pppoe-gui 及其依赖 11.38MB
+# tcl libxss tk
+#rp-pppoe-gui
+#
+sakura
+pppoe-conf
+# Archlive定制包
+#### chestnut-dialer, PPP dialing program
+chestnut-dialer
+# Archlive编译包
+#
+#锐捷网络认证
+ruijieclient
+# Archlive编译包
+# 需要gnome相关支持
+#gruijieclient
+#
+drcom-pum
+# Archlive编译包 DRCOM认证程序
+#
+# 远程桌面
+# libsamplerate
+rdesktop
+# libvncserver
+grdc
+# Archlive编译包
+#
+# 局域网共享
+#
+#libcdio gvfs  6.30MB
+# gogolo-svn 0.42MB
+gigolo-svn
+# Archlive编译包, 网上邻居的最好替代品，利用gvfs文件系统
+#
+# 无线网络密码破解java图形前端   1.58 + 8.24MB
+spoonwep
+# Archlive定制包
+spoonwpa
+# Archlive定制包
+# vuze-archlive  Java写的BT下载工具 14.79MB (依赖于ca-certificates-java  openjdk6)
+#vuze-archlive
+# Archlive定制包
+##### benliud  2.61MB
+benliud
+# Archlive定制包
+#
+#transmission-svn
+# Archlive编译包
+transmission-gtk
+#
+##### amule 32.31MB
+#wxgtk gd geoip
+#amule
+##### rapidsvn-cn svn图形工具 1.42MB
+# apr unixodbc apr-util subversion
+#rapidsvn-cn
+# Archlive定制包
+#####  xchat 6.61MB
+xchat
+#####  linuxqq 6.08MB
+linuxqq
+# Archlive编译包
+#
+#gadmin-rsync-cn
+# Archlive编译包
+#
+#thunderbird
+#### pidgin-git  25.14MB
+pidgin-git
+# Archlive定制包
+#grsync
+#### pan,  A powerful Newsgroup Article reader based on GTK2   8.15MB
+## hunspell enchant gtkspell   
+#pan
+#
+##### firefox-archlive已经包含ftp工具及下载工具
+#gftp
+#filezilla
+##### UrlGfe is a GTK2 download manager 0.30MB
+#urlgfe
+###################### 媒体工具
+# 影音播放
+# libmowgli   libmcs
+audacious
+audacious-plugins
+ShowLyric
+#
+gmbox
+# Archlive定制编译包，Google音乐下载器
+#
+# vlc 及其依赖 57.44MB  vlc-git 23.68MB
+# libmpeg2 faad2 sdl libmp4v2  faac xvidcore x264 libtheora ffmpeg ladspa fluidsynth zvbi libdvbpsi
+# libdvdread libdvdnav libebml libmatroska  libcddb libmpcdec  libmodplug speex sdl_image libdca taglib 
+# avahi dbus libdaemon 
+vlc-git
+# Archlive定制包
+# mplayer-svn 及其依赖  24.40MB
+# cdparanoia libmng aalib libftdi  lirc-utils 
+mplayer-svn
+# Archlive定制包
+#
+# gmlive-svn 及其依赖 79.14MB
+# libsigc++2.0 glibmm cairomm pangomm gtkmm libglademm libstdc++5 sopcast
+gmlive-svn
+# Archlive定制包
+#
+#gpodder
+#
+# recordmydesktop
+gtk-recordmydesktop
+#   0.82MB
+#
+#streamripper
+#   0.15MB
+#streamtuner-cn
+#  A stream directory browser  3.09MB
+#
+## avidemux, A graphical tool to edit video (filter/re-encode/split)   27.37MB
+#avidemux
+#
+#gtkpod
+#mixxx
+# portaudio qt
+### mixxx, Digital DJ mixing software   97.28MB
+#
+lash
+### lash, A session management system for JACK and ALSA  0.68MB
+#
+# hydrogen, Drum Machine and Pattern-based Sequencer 及其依赖 104.46MB
+# libxslt raptor liblrdf qt libtar  
+#hydrogen-svn
+#
+#### elisa, An open source cross-platform media center solution  63.92MB
+# zope-interface twisted gstreamer0.10 liboil gstreamer0.10 pigment python-pigment
+# gstreamer0.10-python python-cssutils pyopenssl setuptools
+#elisa
+#
+#
+####arista, Easy to use multimedia transcoder for the GNOME Desktop  35.80MB
+# gstreamer0.10-ffmpeg libvisual gstreamer0.10-base-plugins gstreamer0.10-good libraw1394 
+# libavc1394 libiec61883 libshout libdv wavpack libproxy libsoup libv4l libcaca gstreamer0.10-good-plugins
+# gstreamer0.10-bad libusb1 libdc1394 exempi libexif libmms libcdaudio mjpegtools jasper  
+# gstreamer0.10-bad-plugins gstreamer0.10-ugly a52dec libsidplay libcdio gstreamer0.10-ugly-plugins
+#arista
+###Audacity is a program that lets you manipulate digital audio waveforms  46.04MB
+# postgresql-libs libmysqlclient redland
+#audacity
+##### Asunder is a graphical CD ripper and encoder  0.52MB
+#asunder
+#################### 图形工具
+#gimp
+#mtpaint
+#
+gsnapshot-cn
+# Archlive编译包
+#
+# pil
+#comix
+# 依赖于pil 3.04MB
+#
+#rawstudio
+# lcms exiv2 
+## rawstudio, An open source raw-image converter written in GTK+. 
+#
+####blender, A fully integrated 3D graphics creation suite   42.48MB
+## ilmbase openexr
+#blender
+#################### 应用办公
+#abiword
+#gnumeric
+#
+# poppler-glib
+#epdfview
+#
+foxitreader
+# Archlive编译包  5.49MB
+leafpad
+geany
+#####  geany  5.96MB
+xarchiver
+#  1.57MB
+#
+xchm
+# chmlib wxgtk
+# xchm 0.74MB 及其依赖 21.48MB
+#
+#brasero
+## brasero, A disc burning application for Gnome
+#
+#meld
+## meld, Visual diff and merge tool for GNOME
+#
+isomaster
+##### CD image editor written in GTK2  0.96MB
+#homebank
+#################### 系统工具
+larchin-syscalls-svn
+# Archlive定制包，中文版
+larchin-svn
+# Archlive定制包，中文版
+gparted
+#
+#luser
+# python-pexpect
+# 0.31MB
+#
+hardinfo
+#  0.64MB
+#shaman
+# 依赖于qt,  2.97MB
+#
+#pyrenamer
+# pyorbit libart-lgpl libgnomecanvas tdb smbclient gnome-mime-data gnome-vfs libbonobo libgnome
+# libbonoboui gnome-keyring libgnomeui gnome-python
+##### An application for the mass renaming of files  1.03MB   89.20MB
+#
+#unetbootin
+#依赖于qt gnome-keyring libgtop libgksu gksu  总93.30MB
+##### UNetbootin allows for the installation of various Linux/BSD livecd distributions to a partition or USB drive. 1.38MB
+#
+##### GTK+ Version of snes9x, a portable Emulator for the Super Nintento Entertainment System 3.48MB
+#snes9x-gtk
+#
+##### gcalctool GNOME Scientific calculator  7.78MB
+#gcalctool
+##### lmms The Linux MultiMedia Studio  24.21MB
+#lmms
+##### vym A mindmapping tool  6.46MB
+#vym
+##
+## Back In Time is a simple backup system for Linux inspired from 'flyback project' and 'TimeVault'.
+# backintime 及其依赖 99.94MB
+## python-notify libidl2 orbit2 pyorbit libart-lgpl libgnomecanvas gconf tdb smbclient gnome-mime-data
+# gnome-vfs libbonobo libgnome libbonoboui gnome-keyring libgnomeui gnome-python 
+#backintime
+# Fast, light & extensible IRC client (curses UI)  66.99MB
+#
+# firefox-archlive 46.15MB
+# mspr nss
+firefox-pgo-archlive
+# Archlive定制包
+#
+firefox-archlive-addons
+# Archlive定制包, 3.5版firefox插件

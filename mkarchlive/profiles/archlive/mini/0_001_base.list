@@ -1,5 +1,5 @@
 ############## base 软件组包含 (490.11MB)
-#busybox
+busybox
 kernel-headers
 # Kernel headers sanitized for use in userspace   3.88MB  基本库
 tzdata
@@ -39,7 +39,7 @@ shadow
 # Shadow password file utilities   3.81MB   基本工具
 gmp
 # A free library for arbitrary precision arithmetic 1.38MB
-coreutils
+#coreutils
 # The basic file, shell and text manipulation utilities of the GNU operating system  11.60MB  
 #  基本工具  sysinit udev等依赖于此包
 # 用busybox代替
@@ -55,16 +55,16 @@ libarchive
 # The standard licenses distribution package  0.46MB
 tcp_wrappers
 # Monitors and Controls incoming TCP connections 0.19MB   esound,inetutils,openssh,xinetd依赖于此包
-vi
+#vi
 # a highly configurable, improved version of the vi text editor (basic version) 1.15MB
 # 用busybox代替
-findutils
+#findutils
 # GNU utilities to locate files 1.41MB   mkinitcpio等依赖于此包
 # 用busybox代替
-gzip
+#gzip
 # GNU compression utility 0.21MB  mkinitcpio等依赖于此包
 # 用busybox代替
-texinfo
+#texinfo
 # Utilities to work with and produce manuals, ASCII text, and on-line documentation from a single source file
 # 2.28MB                  tar time which 等依赖此包
 # tar等用busybox来代替
@@ -74,7 +74,7 @@ gpm
 # a highly configurable, improved version of the vi text editor    29.86MB
 #binutils
 # A set of programs to assemble and manipulate binary and object files  9.91MB 编译需要，被gcc依赖，放到dev模块
-cpio
+#cpio
 # A tool to copy files into or out of a cpio or tar archive  0.40MB
 # 用busybox代替
 device-mapper
@@ -98,7 +98,7 @@ expat
 # An XML Parser library written in C 0.50MB  基本库  python等依赖此库
 dbus-core
 # Freedesktop.org message bus system  1.02MB
-dcron
+#dcron
 # cron implementation which does not assume that your system is running all the time 0.05MB
 # logrotate 依赖此包
 # 用busybox代替
@@ -108,10 +108,10 @@ dhcpcd
 # RFC2131 compliant DHCP client daemon   0.20MB  wicd netcfg依赖于此包
 dialog
 # A tool to display dialog boxes from shell scripts  0.15MB   alsa-utils archlinux-installer依赖此包
-diffutils
+#diffutils
 #  Utility programs used for creating patch files  0.71MB   yaourt 等依赖此包
 # 用busybox代替
-patch
+#patch
 # 用busybox代替
 dmapi
 #  Data migration API  0.13MB
@@ -133,7 +133,7 @@ grep
 # groff-utf8  An extension of groff that permits to view UTF-8 encoded man pages.
 # Man pages for Chinese  
 #
-sed
+#sed
 # GNU stream editor   0.78MB
 # 用busybox代替
 lilo
@@ -190,8 +190,6 @@ module-init-tools
 # utilities needed by Linux systems for managing loadable kernel modules 0.70MB
 less
 # A terminal based program for viewing text files  0.20MB
-libdownload
-#  URL based download library, forked from libfetch  0.11MB
 libpcap
 # A system-independent interface for user-level packet capture  0.86MB
 libusb
@@ -234,15 +232,15 @@ reiserfsprogs
 # Archlive仓里的rp-pppoe-gui已经包含rp-pppoe 所以此处不装
 sdparm
 # An utility similar to hdparm but for SCSI devices  0.20MB
-syslog-ng
+#syslog-ng
 # Next-generation syslogd with advanced networking and filtering capabilities  1.92MB
 # 用busybox代替
-tar
+#tar
 # Utility used to store, backup, and transport files  2.26MB
 # 用busybox代替
 usbutils
 # USB Device Utilities 0.43MB
-wget
+#wget
 #  A network utility to retrieve files from the Web  1.32MB   (hwd yaourt依赖于此包)
 # 用busybox代替
 which
@@ -258,7 +256,7 @@ xfsprogs
 # 新Arch采用xz-utils取代lzma-utils
 #lzma-utils
 unrar
-unzip
+#unzip
 # 用busybox代替
 zip
 arj
@@ -279,7 +277,7 @@ dbus-glib
 # GLib bindings for DBUS    0.64MB
 hal-info
 # Hardware Abstraction Layer information files   0.45MB
-eject
+#eject
 #  Eject is a program for ejecting removable media under software control   0.22MB
 # 用busybox代替
 dmidecode
@@ -387,7 +385,7 @@ syslinux
 #################### 基本命令行工具
 #zsh
 # A very advanced and programmable command interpreter (shell) for UNIX   6.94MB
-time
+#time
 # 用busybox代替
 tree
 sudo
@@ -413,9 +411,6 @@ xdelta
 # 依赖于 glib
 # Used to identify differences between files similar to rsync  0.99MB
 #
-#lftp
-# 依赖于 libtash1 gnutls   总7.75MB
-# Sophisticated command line based FTP client   1.29MB
 #aif
 #The ArchLinux Installation Framework  0.25MB
 #
