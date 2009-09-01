@@ -14,9 +14,11 @@
 
 3、DIY archlive 高级
    通过以下三种途径来定制：
-   A. 修改配置文件mkarchlive/profiles/archlive/archlive.conf 来自定义软件仓、自定义软件清单、自定义主题、添加附加字体及其他特别定制等
+   A. 修改配置文件mkarchlive/profiles/archlive/archlive.conf 来自定义软件仓、自定义软件清单、自定义主题、添加附加字体及其他特别定制等  (该配置文件有具体配置的相关帮助)
    B. 自编译软件，添加到软件清单中
    C. 修改mkarchlive/profiles/archlive/overlay文件夹下内容个性化定制（如果没有则mkarchlive会自动archlive googlecode下载archlive定制的overlay)
+
+   *** 定制清单的时候注意：所有内核模块相关的最好都放在跟内核一个清单中，加上-d 参数。因为mkarchlive为了加快制作速度，只在安装包含module-init-tools的模块完成后更新内核模块依赖关系. 不过archlive 定制的镜像中启动脚本会加depmod -a. 
 
 4、定制参数优先级
    命令行输入参数 > archlive.conf定义参数 > 默认参数
