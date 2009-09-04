@@ -136,7 +136,7 @@ grep
 sed
 # GNU stream editor   0.78MB
 # 用busybox代替
-lilo
+#lilo
 #grub
 # A GNU multiboot boot loader 0.55MB
 #grub-gfxmenu

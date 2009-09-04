@@ -1,3 +1,11 @@
+mkarchlive 工具可以在任何符合条件的linux系统上构建基于Arch GNU/Linux包管理系统pacman的live系统——可以是桌面环境、专业服务器甚至是防火墙。mkarchlive给你充分定制机会。
+mkarchlive 可以运行于符合如下条件的linux系统中：
+A、目标镜像类型为iso时，宿主系统需要安装3.72以上版本的syslinux;
+B、宿主系统需要安装如下常用软件: cdrkit(mkisofs) wget tar links shell
+   sed grep gawk module-init-tools(depmod) util-linux-ng(mount)  glibc(ldconfig) findutils(find)
+   coreutils(ls, cut, tr, echo, rm, mkdir, cp, cat, chown, chmod, head, mknod, tee, touch, ln, md5sum)
+
+
 1、取得脚本
    hg clone http://archlive.googlecode.com/hg
    archlive/archliveinstaller  为archlive安装程序——支持定义软件清单快速安装和复制archlive到硬盘快速安装
@@ -29,4 +37,4 @@
    如果在制作过程中因为某些原因出现错误而终止或者Ctrl+C结束mkarchlive的执行，要删除工作目录必须先卸载挂载于工作目录/union下的aufs文件系统，比如工作目录为 /archlive  则要 sudo umount /archlive/union && sudo rm -rf /archlive 来删除工作目录
 
 6、To Do:
-   使该脚本支持运行于任何linux系统
+   捉虫，优化。

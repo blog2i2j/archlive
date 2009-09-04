@@ -1,10 +1,16 @@
+#清单定制注意：
+# 所有包含内核模块的包必须要放在该清单中
+# 存在其他依赖关系时候 加 "-d" 参数
+# 这样也很方便，内核更新的时候修改该清单就可以了
+#
 #-d kernel26-firmware
 # The included firmware files of the Linux Kernel  0.99MB
 #kernel26
 # The Linux Kernel and modules    91.01MB
 #-d kernel26-archlive-mini
--d kernel26-snapshot-2.6.31
+-d kernel26-git
 # Archlive定制包，包含Archlive内核及模块.加入了kernel官方补丁、gentoo及Fedora官方补丁、UTF-8中文补丁、reiser4补丁.
+# 包含aufs squashfs4 文件系统模块
 # 91.01MB
 #
 #-d aufs2-git
@@ -14,7 +20,7 @@
 #
 #-d sqlzma
 # Archlive定制包，兼容以前的模块，兼容slax、bt的程序模块
--d squashfs-2.6.31
+#-d squashfs
 # squashfs 4.0 archlive定制，包含squashfs-tools, 无法打开以前的archlive模块
 ##################### 常用网卡驱动程序
 -d ndiswrapper-archlive
@@ -37,3 +43,7 @@
 #-d tiacx
 # 等Arch官方更新
 -d zd1211-firmware
+#
+-d virtualbox-modules
+#virtualbox-ose-additions-modules
+#Kernel modules for VirtualBox Guest Additions  0.16MB  已经包含于基本模块
