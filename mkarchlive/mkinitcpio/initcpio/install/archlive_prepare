@@ -1,7 +1,0 @@
-install ()
-{
-    MODULES=""
-    BINARIES=""
-    FILES=""
-    SCRIPT="archlive_prepare"
-}
