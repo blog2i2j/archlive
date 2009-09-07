@@ -17,6 +17,7 @@
 #    (一般用户/etc/pacman.conf， 制作archlive的就还有另外的软件仓配置文件了）
 #    脚本会自动检测软件仓配置文件中是否已经存在预添加的软件仓
 # 
+#----2009-09-06更新： 加入checkuser函数, 更新list_in_project函数
 #----2009-06-16更新： 加入文件大小判断，简化文件是否上传的判断条件
 #
 
@@ -53,7 +54,8 @@ usage ()
 {
     echo " 用法:  ${APPNAME} [选项]  命令 <命令选项>"
     echo " 选项:"
-    echo "    -p Project_Name   预上传到googlecode的项目名, 默认: archlive-pkg"
+    echo "    -p Project_Name   预上传到googlecode的项目名"
+    echo "       archlive相关项目 archlive  wiki.archlive  archlive-pkg  wiki.archlive-pkg"
     echo "    -u UserName	Googlecode帐号"
     echo "    -w Passwd      Googlecode密码"
     echo "    -e EXCLUDELIST 不上传的文件清单"
@@ -62,9 +64,9 @@ usage ()
     echo "    -h               本帮助信息."
     echo " 命令:"
     echo "     create <REPO_DIR> <REPO_NAME>  在<REPO_DIR>下创建名为<REPO_NAME>的软件仓"
-    echo "     upload <REPO_DIR> <Project_Name>   将<REPO_DIR>下的文件提交到<Project_Name>项目"
+    echo "     upload <REPO_DIR>   将<REPO_DIR>下的文件提交到<Project_Name>项目"
     echo "     add <REPO_DIR> <REPO_NAME>     将本地<REPO_DIR>下的<REPO_NAME>软件仓加入到指定的pacman.conf"
-    echo "     c_and_u <REPO_DIR> <REPO_NAME> <Project_Name> 在本地<REPO_DIR>下建立名为<REPO_NAME>的软件仓，并提交到<REPO_NAME>项目"
+    echo "     c_and_u <REPO_DIR> <REPO_NAME> 在本地<REPO_DIR>下建立名为<REPO_NAME>的软件仓，并提交到<REPO_NAME>项目"
     echo "     c_and_a <REPO_DIR> <REPO_NAME> 在本地<REPO_DIR>下建立名为<REPO_NAME>的软件仓，并加入到指定的pacman.conf"
     exit $1
 }
@@ -73,9 +75,32 @@ error () { echo "XXX $@";}
 warn () { echo "!!! $@";}
 info () { echo "*** $@";}
 
+# 维护googlecode人员用户信息
+checkuser ()
+{ 
+	if [ "x$UserName" = "x" -o "x$Passwd" = "x" ]; then 
+		if [ -f ~/.googlecode ]; then
+			. ~/.googlecode
+		else
+			warn "无googlecode用户信息"
+			warn "请 -u 用户名 -w 密码 来指定."
+			usage 1
+		fi
+	else
+		if [ -f ~/.googlecode ]; then
+			sed -i "s/UserName=.*/UserName=\"$UserName\"/g" ~/.googlecode
+			sed -i "s/Passwd=.*/Passwd=\"$Passwd\"/g" ~/.googlecode
+		else
+			echo "UserName=$UserName" >~/.googlecode
+			echo "Passwd=$Passwd" >>~/.googlecode
+		fi		
+	fi
+}
+
 # 检测、配置输入的命令
-while getopts 'u:w:c:e:fh' arg; do
+while getopts 'p:u:w:c:e:fh' arg; do
     case "${arg}" in
+	p) Project_Name="${OPTARG}" ;;
 	u) UserName="${OPTARG}" ;;
 	w) Passwd="${OPTARG}" ;;
 	c) PACMANCONF="${OPTARG}" ;;
@@ -95,9 +120,9 @@ command_name="${1}"
 
 case "${command_name}" in
     create) REPO_DIR="${2}"; REPO_NAME="${3}"; remark="创建本地自定义软件仓(Repo)" ;;
-    upload) REPO_DIR="${2}"; Project_Name="${3}"; remark="将本地自定义软件仓(Repo)提交到Googlecode" ;;
+    upload) REPO_DIR="${2}"; remark="将本地自定义软件仓(Repo)提交到Googlecode" ;;
     add) REPO_DIR="${2}"; REPO_NAME="${3}"; remark="将本地自定义软件仓(Repo)加到软件仓配置文件${PACMANCONF}" ;;
-    c_and_u) REPO_DIR="${2}"; REPO_NAME="${3}"; Project_Name="${4}"; remark="创建Repo并上传到${Project_Name}项目" ;;
+    c_and_u) REPO_DIR="${2}"; REPO_NAME="${3}"; remark="创建Repo并上传到${Project_Name}项目" ;;
     c_and_a) REPO_DIR="${2}"; REPO_NAME="${3}"; remark="创建Repo并加到软件仓配置文件${PACMANCONF}" ;;
     *) warn "未知命令'${command_name}'"; usage 1 ;;
 esac
@@ -130,9 +155,25 @@ custom_repo ()
 # 列出已经上传googlecode项目的文件
 list_in_project ()
 {
-    links -no-g -dump http://code.google.com/p/$1/downloads/list | grep "gz" >$2
-    if [ $? -ne 0 ]; then error "无法访问http://code.google.com/p/${Project_Name}/downloads/list，请检查网络连接"; fi
+    local i=0
+    local n=0
+    local a=0
+    echo "正从http://$1.googlecode.com 上导出下载清单到$2, 请稍候..."
+    [ -f tmp ] && rm -f tmp
+    while [ $a -le 100 ]; do
+	links -no-g -dump "http://code.google.com/p/$1/downloads/list?start=$i" | grep "gz" | awk '{print $1}' | sort >>tmp
+	if [ $? -ne 0 ]; then
+		error "无法访问http://code.google.com/p/${Project_Name}/downloads/list，请检查网络连接"
+		break
+	fi
+	n=$(wc tmp | awk '{print $1}')
+	let i+=100
+	a=`expr $i - $n`
+    done
+    sort tmp >$2 && rm -f tmp
+    [ $n -gt 0 ] && echo "完成! 总共 $n 条记录."
 }
+
 # 检查软件仓$1  是否已经在  软件仓配置文件$2  中定义
 is_in_pacmanconf ()
 { 
@@ -170,24 +211,23 @@ _create ()
 
 _upload ()
 {
-    if [ "x${REPO_DIR}" = "x" ]; then 
+	checkuser
+
+	if [ "x${REPO_DIR}" = "x" ]; then 
 		error "必须指定软件仓位置"
 		usage 1
-    fi
-    if [ "x${Project_Name}" = "x" -o "x${UserName}" = "x" ]; then
-		error "必须指定预上传的googlecode项目名、用户名及密码"
-		usage 1
-    fi
+	fi
 
 	# 上传到googlecode的python脚本
-	if [ ! -f $(pwd)/googlecode_upload.py ]; then
+	UPLOADPROG="/usr/bin/googlecode_upload.py"
+	if [ ! -f $(pwd)/googlecode_upload.py ] && [ ! -x ${UPLOADPROG} ]; then
 		wget -q http://support.googlecode.com/svn/trunk/scripts/googlecode_upload.py
 		chmod +x $(pwd)/googlecode_upload.py
+		UPLOADPROG="$(pwd)/googlecode_upload.py"
 	fi
-	UPLOADPROG="$(pwd)/googlecode_upload.py"
+	info "正将自定义软件仓${REPO_DIR}下的文件，以用户${UserName}身份上传到googlecode项目${Project_Name}"
+	list_in_project ${Project_Name} $(pwd)/old.list
 
-    info "正将自定义软件仓${REPO_DIR}下的文件，以用户${UserName}身份上传到googlecode项目${Project_Name}"
-    list_in_project ${Project_Name} $(pwd)/old.list
     for file in $(ls ${REPO_DIR}); do
 	exist=""
 	exclude=""

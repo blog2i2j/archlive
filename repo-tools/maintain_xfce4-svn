@@ -12,6 +12,7 @@
 # 特别说明：维护对应软件仓里面的软件的依赖关系必须放在对应软件仓目录下的depends文件中
 # 下个版本将对普通软件包自动检测依赖关系
 #
+#----2009-09-06 加入冲突包卸载功能，更新list_in_project函数
 #----2009-07-08 由于archlive-pkg改用hg管理，获取上传PKGBUILD的方式对应改动, 同时用户信息保存在~/.googlecode下，以免重复输入.
 #----2009-06-17 判断一个程序是否已经安装
 #----2009-06-17 在olympic的帮助下debug sed -i 's/^M//g' maintain   ^M由Ctrl-v +M 输入， 多余的回车符——用notepad编辑过)
@@ -184,11 +185,9 @@ already_installed ()
 prepare_depends ()
 {
 	cat "${This_Repo_Name}-build/depends" | grep -v "^#" | while read pkgname; do
-		#if [ "$(sudo pacman -Q | grep "^$pkgname ")" = "x" ]; then
-			if ! already_installed $pkgname; then
+		if ! already_installed $pkgname; then
 			echo "安装编译依赖包$pkgname"
 			rmlockfile
-			#if [ -f /var/lib/pacman/db.lck ]; then sudo rm -f /var/lib/pacman/db.lck; fi
 			sudo pacman -Sf --noprogressbar --noconfirm $pkgname
     		fi
 	done
@@ -198,7 +197,7 @@ function_compile ()
 {
  	echo "编译并安装 $pkgname"
 	cd ${SVNDIR}-build/$pkgname
-	makepkg
+	makepkg -f || return 1
 	if [ $? -ne 0 ]; then 
 		echo "编译失败"
 		return 1
@@ -206,8 +205,11 @@ function_compile ()
 	else
 		if [ "$INSTALL" = "y" ]; then
 			rmlockfile
-			#if [ -f /var/lib/pacman/db.lck ]; then sudo rm -f /var/lib/pacman/db.lck; fi
-			sudo pacman -Uf *.pkg.tar.gz
+			if already_installed ${pkgname%-*}; then
+				echo "删除冲突软件包${pkgname%-*}..."
+				sudo pacman -Rs ${pkgname%-*}
+			fi
+			sudo pacman -Uf *.pkg.tar.gz || return 1
 		fi
 	fi
 	mv -f *.pkg.tar.gz $PKGDIR
@@ -221,11 +223,13 @@ do_compile ()
 	if [ -f ${SVNDIR}-build/order ]; then
 		cat "${SVNDIR}-build/order" | grep -v "^#" | while read pkgname; do
 			function_compile
+			[ $? eq 1 ] && (break && return 1)
 		done
 	else
 		for pkgname in $(ls ${SVNDIR}-build); do 
 			[ "x$(file ${SVNDIR}-build/$pkgname | grep "directory")" != "x" ] && continue
 			function_compile
+			[ $? eq 1 ] && (break && return 1)
    		done
 	fi
 }
@@ -247,23 +251,38 @@ create_repo ()
 	rm -f $PKGDIR/*.db.tar.gz.old
 }
 
-# 列出googlecode项目的文件
+# 列出已经上传googlecode项目的文件
 list_in_project ()
 {
-    links -no-g -dump http://code.google.com/p/$1/downloads/list | grep "gz" >$2
-    if [ $? -ne 0 ]; then error "无法访问http://code.google.com/p/${Project_Name}/downloads/list，请检查网络连接"; fi
+    local i=0
+    local n=0
+    local a=0
+    echo "正从http://$1.googlecode.com 上导出下载清单到$2, 请稍候..."
+    [ -f tmp ] && rm -f tmp
+    while [ $a -le 100 ]; do
+	links -no-g -dump "http://code.google.com/p/$1/downloads/list?start=$i" | grep "gz" | awk '{print $1}' | sort >>tmp
+	if [ $? -ne 0 ]; then
+		error "无法访问http://code.google.com/p/${Project_Name}/downloads/list，请检查网络连接"
+		break
+	fi
+	n=$(wc tmp | awk '{print $1}')
+	let i+=100
+	a=`expr $i - $n`
+    done
+    sort tmp >$2 && rm -f tmp
+    [ $n -gt 0 ] && echo "完成! 总共 $n 条记录."
 }
 
 do_upload ()
 {
     checkuser
     # 上传到googlecode的python脚本
-    if [ ! -f $START/googlecode_upload.py ]; then
-	wget -q http://support.googlecode.com/svn/trunk/scripts/googlecode_upload.py
-	mv googlecode_upload.py $START/
-	chmod +x $START/googlecode_upload.py
-    fi
-    UPLOADPROG="$START/googlecode_upload.py"
+	UPLOADPROG="/usr/bin/googlecode_upload.py"
+	if [ ! -f $(pwd)/googlecode_upload.py ] && [ ! -x ${UPLOADPROG} ]; then
+		wget -q http://support.googlecode.com/svn/trunk/scripts/googlecode_upload.py
+		chmod +x $(pwd)/googlecode_upload.py
+		UPLOADPROG="$(pwd)/googlecode_upload.py"
+	fi
 
     list_in_project ${Project_Name} $START/old.list
     for file in $(ls $PKGDIR); do

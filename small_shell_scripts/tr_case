@@ -1,0 +1,50 @@
+#!/bin/sh
+FILES=""
+TRCASE=""
+EXT=""
+OPT=no
+VERBOSE="off"
+
+while getopts :luv OPTION; do
+case $OPTION in
+	l)	TRCASE="lower"
+		EXT=".LC"
+		OPT=yes
+		;;
+	u)	TRCASE="upper"
+		EXT=".UC"
+		OPT=yes
+		;;
+	v)	VERBOSE=on
+		;;
+	?)	echo "usage: `basename `: -[l|u] -v file[s]"
+		exit 1
+		;;
+	esac
+done
+
+shift `expr $OPTIND - 1`
+if [ "$#" = "0" ] || [ "$OPT" = "no" ]; then
+	echo "usage: `basename `: -[l|u] -v file[s]"
+	exit 1
+fi
+
+for LOOP in "$@"; do
+	if [ ! -f $LOOP ]; then
+		echo "`basename ` :error cannot find file $LOOP"
+		exit 1
+	fi
+	echo $TRCASE $LOOP
+	case $TRCASE in
+		lower) if [ "VERBOSE" = "on" ];then
+				echo "doing...lower on $LOOP..newfile"
+			fi
+			cat $LOOP|tr "[a-z]" "[A-Z]" > $LOOP$EXT
+			;;
+		upper) if [ "VERBOSE" = "on" ];then
+				echo "doing upper on $LOOP..newfile"
+			fi
+			cat $LOOP|tr "[A-Z]" "[a-z]" >$LOOP$EXT
+			;;
+	esac
+done

@@ -34,16 +34,13 @@
 APPNAME=$(basename "${0}")
 cmdline=$@
 
-error () { echo -e "\033[1;31;40m!!!错误 \033[1;37;40m$@\033[1;0m"; }
-warn ()  { echo -e "\033[1;33;40m***警告 \033[1;37;40m$@\033[1;0m"; }
-info () { echo -e "\033[1;33;40m>>> \033[1;37;40m$@\033[1;0m"; }
-
-[ "$EUID" != "0" ] && (error "错误: 必须以root用户运行本制作脚本." && exit 1)
-
-# 挂载aufs文件系统并判断是否已经挂载成功
-modprobe aufs
-[ $? -ne 0 ] && (error "无法装载aufs文件系统模块,退出。" && exit 1)
-
+# 消息提示 改成Arch 官方风格
+plain() { echo -e "\033[1;2m  \033[1;0m$@\033[1;0m";}
+msg() { echo -e "\033[1;32m==>\033[1;0m\033[1;1m $@\033[1;0m";}
+msg2() { echo -e "\033[1;34m   ->\033[1;0m\033[1;1m $@\033[1;0m";}
+warn() { echo -e "\033[1;33m==> $(gettext "WARNING:")\033[1;0m\033[1;1m $@\033[1;0m";}
+error() { echo -e  "\033[1;31m==> $(gettext "ERROR:")\033[1;0m\033[1;1m $@\033[1;0m";}
+green() { echo -e "\033[1;32m $@\033[1;0m";}
 # usage: usage <exitvalue>
 usage ()
 {
@@ -76,6 +73,18 @@ usage ()
    exit $1
 }
 
+green "                           运行本程序前： "
+green "  *** 请详细阅读readme, archlive.conf等文件——了解详细的操作过程后继续 ***"
+echo "				     5 秒后继续"
+echo ""
+sleep 5
+[ "$EUID" != "0" ] && (error "错误: 必须以root用户运行本制作脚本." && exit 1)
+
+# 挂载aufs文件系统并判断是否已经挂载成功
+modprobe aufs
+[ $? -ne 0 ] && (error "无法装载aufs文件系统模块,请确保宿主系统aufs内核模块被正确安装. " && exit 1)
+
+
 ###------------------------检测配置---------------------------------------
 # 根据配置文件archlive.conf存放位置与archlive.conf中PROFILE_DIR定义的值是否一致来判断查找到的配置文件是否是正确
 config_is_right () {
@@ -83,7 +92,8 @@ config_is_right () {
    return 1
 }
 # 装载archlive的配置文件, 从当前目录查看是否存在archlive.conf，存在即调用之
-info "开始检测 程序相关配置设置"
+msg "开始检测 程序相关配置设置 "
+
 #echo "查找配置文件archlive.conf，以第一个符合条件的为制作配置文件"
 for config_file in $(find .  -name "archlive.conf"); do
 	source ${config_file}
@@ -92,13 +102,13 @@ done
 if [ "x${CONFIG_FILE}" = "x" ]; then
    error "没有找到正确的配置文件archlive.conf" && usage 1 
 #else
-#   echo "载入archlive制作配置文件${CONFIG_FILE}"
+#   plain "载入archlive制作配置文件${CONFIG_FILE}"
 fi
 source ${CONFIG_FILE}
 if [ "x${PROFILE_DIR}" = "x" ]; then
 	error "载入配置文件${CONFIG_FILE}失败，请检查配置文件是否已经损坏..."
 #else
-#	echo "完成."
+#	plain "完成."
 fi
 
 # 检测、配置输入的命令
@@ -114,11 +124,11 @@ while getopts 'i:P:b:M:m:a:t:c:nfvh' arg; do
 	f) FORCE="y" ;;
 	v) QUIET="n" ;;
         h|?) usage 0 ;;
-        *) echo "无效参数 '${arg}'"; usage 1 ;;
+        *) error "无效参数 '${arg}'"; usage 1 ;;
    esac
 done
 
-#echo "输入的选项及命令: $cmdline"
+#plain "输入的选项及命令: $cmdline"
 shift $(($OPTIND - 1))
 
 CMD_NAME="${1}"
@@ -153,7 +163,7 @@ if [ "x$CACHE" = "x" ]; then
    if [ -f /etc/pacman.conf ]; then
 	CACHE="$(grep "CacheDir" /etc/pacman.conf | awk -F '=' '{print $2}')"
    else
-	echo "系统不存在pacman.conf，宿主系统不是Arch, 将创建软件包缓存位置/var/cache/pacman/pkg"
+	plain "系统不存在pacman.conf，宿主系统不是Arch, 将创建软件包缓存位置/var/cache/pacman/pkg"
 	CACHE="/var/cache/pacman/pkg"
    fi
 fi
@@ -167,19 +177,19 @@ case ${ZIP_MODE} in
       EXT="sqfs"
       OPTION="-nolzma"
       modprobe squashfs
-      [ $? -ne 0 ] && error "宿主系统squashfs文件系统模块" && usage 1
+      [ $? -ne 0 ] && error "宿主系统无squashfs3 文件系统模块" && usage 1
       ;;
    2) MKSQUASHFS="${START_DIR}/squashfs3/mksquashfs"
       EXT="lzm"
       OPTION=""
       modprobe sqlzma
-      [ $? -ne 0 ] && error "宿主系统squashfs文件系统模块" && usage 1
+      [ $? -ne 0 ] && error "宿主系统无打lzm补丁的squashfs文件系统模块" && usage 1
       ;;
    3) MKSQUASHFS="${START_DIR}/squashfs4/mksquashfs"
       EXT="sqfs"
       OPTION=""
       modprobe squashfs
-      [ $? -ne 0 ] && error "宿主系统squashfs文件系统模块" && usage 1
+      [ $? -ne 0 ] && error "宿主系统无squashfs4文件系统模块" && usage 1
       ;;
 esac
 
@@ -200,31 +210,31 @@ case $IMG_TYPE in
 	img*) IMG_TYPE="img" ;;
 	disk*) IMG_TYPE="img" ;;
 	cd*) IMG_TYPE="iso" ;;
-	*) IMG_TYPE="iso"; echo "无效的目标类型，采用默认的iso";;
+	*) IMG_TYPE="iso"; warn "无效的目标类型，采用默认的iso";;
 esac
 case $BOOT in
 	isolinux) BOOT="isolinux" ;;
 	syslinux) BOOT="syslinux" ;;
 	grub2) BOOT="gub2" ;;
 	grub*) BOOT="grub" ;;
-	*) BOOT="isolinux"; echo "未知的或者暂时不支持的目标镜像引导程序，采用默认的isolinux" ;;
+	*) BOOT="isolinux"; warn "未知的或者暂时不支持的目标镜像引导程序，采用默认的isolinux" ;;
 esac
 
 if [ "x${BOOT}" = "x" ]; then BOOT="syslinux"; fi
 
 if [ "x${WORK_DIR}" = "x" ]; then
-#   echo "命令行没有指定工作目录，查看配置文件中是否有设置的工作目录"
+#   plain "命令行没有指定工作目录，查看配置文件中是否有设置的工作目录"
    WORK_DIR=$(grep WORK_DIR ${CONFIG_FILE} | cut -d "=" -f2)
    if [ "x${WORK_DIR}" = "x" ]; then 
 	WORK_DIR="/$(date +%m%d)"
-	#echo "配置文件也没有指定工作目录，采用默认设置${WORK_DIR}"
+	#warn "配置文件也没有指定工作目录，采用默认设置${WORK_DIR}"
    fi
 fi
 [ -d ${WORK_DIR} ] && mkdir -p ${WORK_DIR}
 if [ "x${IMGNAME}" = "x" ]; then IMGNAME="${WORK_DIR}/archlive-${ARCH}-$(date +%F).iso"; fi
 
 #archlive最终软件清单
-PKGFILE="$WORK_DIR/packages.list"
+PKGFILE="${WORK_DIR}/packages.list"
 
 #实际需要的模块 (去掉#)
 MODULES=$(echo $MODULES | tr -s " " "\n" | grep -v "#")
@@ -246,6 +256,9 @@ EXTRA_MODULES_INS_DIR="${MODULEDIR}/extra_modules"
 
 # 附加独立程序模块EXTRAMODULES的存放位置（sqfs或者lzm模块）
 EXTRA_MODULES_TARGET="${IMGROOT}/${CDNAME}/modules/extra_modules"
+
+# 不需要的模块备份位置
+NO_NEED_MODULES_DIR="${WORK_DIR}/${NO_NEED_MODULES}"
 
 # archlive.conf 中定义的 EXTRAPACKAGEDIR 的存放位置
 EXTRA_PACKAGE_TARGET="${IMGROOT}/${CDNAME}/modules/extra_package"
@@ -274,7 +287,7 @@ BUILDLOG="${WORK_DIR}/log"
 #--------检查宿主系统程序是否满足条件----
 case ${IMG_TYPE} in iso)
 	mkisofs_version=$(mkisofs --version | head -1| cut -d " " -f2)
-	[ "x${mkisofs_version}" = "x" ] && (error "宿主系统没有mkisofs程序，请安装cdrkit" && exit 1)
+	[ "x${mkisofs_version}" = "x" ] && (error "宿主系统没有mkisofs程序，请先安装cdrkit" && exit 1)
 	;;
 esac
 squashfs_version=$($MKSQUASHFS -version | head -1 | cut -d " " -f3)
@@ -284,9 +297,7 @@ if [ "x${host_pacman_version}" = "x" ] && [ "${USE_STATIC_PACMAN}" != "y" ]; the
 	exit 1
 fi
 #--------------------------------------
-
-
-echo "-----------------------${APPNAME} 程序设置结果：-----------------------------------"
+green "-----------------------${APPNAME} 程序设置结果：-----------------------------------"
 echo "       ${APPNAME}程序执行操作: ${CMD_NAME}"
 echo "                ${DESCRIPTION}"
 echo "         Archlive定制配置文件: ${CONFIG_FILE}"
@@ -325,12 +336,12 @@ fi
 if [ "${CMD_NAME}" = "install" -o "${CMD_NAME}" = "squash" -o "${CMD_NAME}" = "modules" -o "${CMD_NAME}" = "all" ]; then
 echo "  需要制作的附加独立程序模块为: $(echo ${EXTRAMODULES} | tr -s "\n" " ")"
 fi
-echo "-----------------------------------------------------------------------------------"
-echo "*** 如果以上设置不是你想要的设置，Ctrl+C 终止程序的执行，并检测相关配置文件. ***"
+green "-----------------------------------------------------------------------------------"
+green "*** 如果以上设置不是你想要的设置，Ctrl+C 终止程序的执行，并检测相关配置文件. ***"
 echo "                        5 秒后开始程序                               "
 sleep 5
 echo ""
-echo "-------------现在开始执行 ${APPNAME} ${CMD_NAME}-----------------------"
+msg "现在开始执行 ${APPNAME} ${CMD_NAME}"
 
 ###--------------------程序、函数、模块----------------------------------------
 # 自定义软件仓
@@ -360,76 +371,76 @@ function add_customrepo2pacmanconf ()
    sed -i "/# and they will be used before the default mirrors./ a\
 	\ \n[${REPO_Name}]\
 	\nServer = file://$REPO" ${PACMANCONF}
-   echo "将自定义软件仓加入${PACMANCONF}完成"
+   plain "将自定义软件仓加入${PACMANCONF}完成"
 }
 
 prepare_overlay (){
 
-   info "准备Archlive 系统配置文件目录overlay"
+   msg2 "准备Archlive 系统配置文件目录overlay"
    [ -d ${WORK_DIR}/overlay ] && rm -rf ${WORK_DIR}/overlay
    if [ -d ${PROFILE_DIR}/overlay ]; then
 	mkdir -p ${WORK_DIR}/overlay
 	cp -rf ${PROFILE_DIR}/overlay/* ${WORK_DIR}/overlay/
    else
       if [ ! -f overlay.tgz ]; then
-		echo "下载Archlive附加配置文件overlay.tgz"
+		plain "下载Archlive附加配置文件overlay.tgz"
 		wget -q "${TGZURL}/overlay.tgz"  2>&1 > /dev/null
       fi
-      echo "释放Archlive附加配置文件overlay.tgz"
+      plain "释放Archlive附加配置文件overlay.tgz"
       tar -xzvpf overlay.tgz -C ${WORK_DIR}   2>&1 > /dev/null
    fi
    OVERLAY=${WORK_DIR}/overlay
    for theme in ${THEME}; do 
    	if [ ! -f "${theme}-theme.tgz" ]; then
-		echo "下载主题包文件${theme}-theme.tgz"
+		plain "下载主题包文件${theme}-theme.tgz"
             	wget -q "${TGZURL}/${theme}-theme.tgz"  2>&1 > /dev/null
        	fi
 	[ ! -d ${OVERLAY}/usr/share/themes ] && mkdir -p ${OVERLAY}/usr/share/themes
-	echo "释放主题包${theme}-theme.tgz"
+	plain "释放主题包${theme}-theme.tgz"
        	tar -xzvpf "${theme}-theme.tgz" -C "${OVERLAY}/usr/share/themes/"   2>&1 > /dev/null
    done
    for icon in ${ICON}; do 
    	if [ ! -f "${icon}-icons.tgz" ]; then
-		echo "下载图标文件${icon}-icons.tgz"
+		plain "下载图标文件${icon}-icons.tgz"
 	  	wget -q "${TGZURL}/${icon}-icons.tgz"  2>&1 > /dev/null
        	fi
 	[ ! -d ${OVERLAY}/usr/share/icons ] && mkdir -p ${OVERLAY}/usr/share/icons
-	echo "释放图标文件包${icon}-icons.tgz"
+	plain "释放图标文件包${icon}-icons.tgz"
        	tar -xzvpf "${icon}-icons.tgz" -C "${OVERLAY}/usr/share/icons/"  2>&1 > /dev/null
    done
    for cursor in ${CURSOR}; do 
     	if [ ! -f "${cursor}-cursor.tgz" ]; then
-   		echo "下载鼠标指针文件包${cursor}-cursor.tgz"
+   		plain "下载鼠标指针文件包${cursor}-cursor.tgz"
        		wget -q "${TGZURL}/${cursor}-cursor.tgz"  2>&1 > /dev/null
 	fi
 	[ ! -d ${OVERLAY}/usr/share/icons ] && mkdir -p ${OVERLAY}/usr/share/icons
- 	echo "释放鼠标指针文件包${cursor}-cursor.tgz"
+ 	plain "释放鼠标指针文件包${cursor}-cursor.tgz"
 	tar -xzvpf "${cursor}-cursor.tgz" -C "${OVERLAY}/usr/share/icons/"  2>&1 > /dev/null
    done
    for font in ${EXTRAFONTS}; do 
    	if [ ! -f "${font}-font.tgz" ]; then
-		echo "下载附加字体包文件${font}-font.tgz"
+		plain "下载附加字体包文件${font}-font.tgz"
         	wget -q "${TGZURL}/${font}-font.tgz"  2>&1 > /dev/null
        	fi
 	[ ! -d ${OVERLAY}/usr/share/fonts/TTF ] && mkdir -p ${OVERLAY}/usr/share/fonts/TTF
-	echo "释放附加字体包${font}-font.tgz"
+	plain "释放附加字体包${font}-font.tgz"
        	tar -xzvpf "${font}-font.tgz" -C "${OVERLAY}/usr/share/fonts/TTF/"  2>&1 > /dev/null
    done
    [ -d "${OVERLAY}/home/arch" ] && chown -R arch:users "${OVERLAY}/home/arch" && chmod -R 700 "${OVERLAY}/home/arch"
    [ -d ${OVERLAY}/root ] && chown -R root:root "${OVERLAY}/root" && chmod -R 700 "${OVERLAY}/root"
 
-   info "overlay准备完毕"
+   msg2 "overlay准备完毕"
 }
 prepare_pacman (){
 
    # 检查宿主系统是否存在pacman，如果不存在则下载pacman.static以完成后续操作
    # 如果archlive.conf强制使用静态编译版pacman，则下载pacman.static
 
-   info "准备安装程序 pacman / pacman.static "
+   msg2 "准备安装程序 pacman / pacman.static "
    PACMAN="pacman"
    if [ "${USE_STATIC_PACMAN}" = "y" -o "x${host_pacman_version}" = "x" ]; then
-	[ "${USE_STATIC_PACMAN}" = "y" ] && echo "配置文件${CONFIG_FILE} 设置为强制使用pacman.static"
-	[ "x${pacman_version}" = "x" ] && echo "宿主系统不是Arch GNU/Linux, 使用pacman.static代替"
+	[ "${USE_STATIC_PACMAN}" = "y" ] && plain "配置文件${CONFIG_FILE} 设置为强制使用pacman.static"
+	[ "x${pacman_version}" = "x" ] && plain "宿主系统不是Arch GNU/Linux, 使用pacman.static代替"
 	if [ -x /tmp/usr/bin/pacman.static ]; then
 		PACMAN="/tmp/usr/bin/pacman.static"
 		pacman_version=$(${PACMAN} -V | grep "Pacman" | head -1 | tr -s " " | cut -d " " -f 4)
@@ -439,10 +450,10 @@ prepare_pacman (){
 		PKGARG="http://repo.archlinux.fr/${ARCH}"
 		#PKGARG="http://repo.archlinux-br.org/${ARCH}"
 		if [ ! -f pacman-static-*.pkg.tar.gz ]; then
-			echo "现在开始下载pacman.static ..."
+			plain "现在开始下载pacman.static ..."
 			wget -c $PKGARG/$(links -dump $PKGARG | grep "pacman-static-" | cut -d " " -f 1) 2>&1 > /dev/null
 		else
-			echo "使用$(ls pacman-static-*.pkg.tar.gz)"
+			plain "使用$(ls pacman-static-*.pkg.tar.gz)"
 		fi
 		tar -xzvpf pacman-static*.pkg.tar.gz -C /tmp 2>&1 > /dev/null
 		[ -x /tmp/usr/bin/pacman.static ] && PACMAN="/tmp/usr/bin/pacman.static"
@@ -450,7 +461,7 @@ prepare_pacman (){
 		[ "x${pacman_version}" = "x" ] && error "无法找到pacman.static程序，请确认下载的包是否完整!" && usage 1
 	fi
    fi
-   [ "x${pacman_version}" != "x" ] && echo "完成! 安装程序为 $PACMAN, 版本为: ${pacman_version}"
+   [ "x${pacman_version}" != "x" ] && msg2 "完成! 安装程序为 $PACMAN, 版本为: ${pacman_version}"
 }
 cmd_prepare (){
 
@@ -462,37 +473,38 @@ cmd_prepare (){
 			error "      加入 -f 参数或者archlive.conf中设置FORCE="y"来升级安装. "
 			exit 1
 		else
-			info "更新archlive——基于${WORK_DIR}来更新制作archlive."
+			green "更新archlive——基于${WORK_DIR}来更新制作archlive."
 		fi
    	fi
    fi
+   msg "开始准备工作..."
    prepare_pacman
-   info "创建制作archlive的相关目录"
+   msg2 "创建制作archlive的相关目录"
    [ ! -d ${UNION} ] && mkdir -p "${UNION}"    # {WORK_DIR} 一并被创建
    [ ! -d ${INSTROOT} ] && mkdir -p "${INSTROOT}"
    [ ! -d ${MODULEDIR} ] && mkdir -p "${MODULEDIR}"
 
    if [  "x$REPO_Name" != "x" -a "x$REPO" != "x" ]; then
-       info "建立自定义软件仓..."
+       msg2 "建立自定义软件仓..."
        custom_repo ${REPO} ${REPO_Name}
-       echo "自定义软件仓建立完成"
+       msg2 "自定义软件仓建立完成"
        if ! is_in_pacmanconf; then add_customrepo2pacmanconf; fi
    fi
 
-   info "准备目标镜像根目录结构及启动的相关配置文件"
+   msg2 "准备目标镜像根目录结构及启动的相关配置文件"
    [ ! -d ${IMGROOT} ] && mkdir -p ${IMGROOT}
    if [ -d ${PROFILE_DIR}/cd-root ]; then
 	cp -rf ${PROFILE_DIR}/cd-root/* ${IMGROOT}/
    else
       if [ ! -f cd-root.tgz ]; then
-		echo "下载Archlive光盘根目录结构文件cd-root.tgz"
+		plain "下载Archlive光盘根目录结构文件cd-root.tgz"
 		wget -q "${TGZURL}/cd-root.tgz"  2>&1 > /dev/null
       fi
       echo "释放Archlive光盘根目录结构cd-root.tgz"
       tar -xzvpf cd-root.tgz -C ${IMGROOT}  2>&1 > /dev/null
    fi
    mkdir -p ${IMGROOT}/${CDNAME}/{base,modules,optional,rootcopy}
-   echo "完成."
+   msg2 "完成."
 
    if [ "${USE_OVERLAY}" = "y" ]; then
 	prepare_overlay
@@ -505,30 +517,30 @@ cmd_prepare (){
    [ -d ${BUILDLOG} ] && rm -R ${BUILDLOG}
    mkdir -p ${BUILDLOG}
 
-   info "mkarchlive准备工作完成"
+   msg "mkarchlive准备工作完成"
 }
 function mount_aufs_w () {
-   info "将$1以aufs可写模式挂载到${UNION}"
+   plain "将$1以aufs可写模式挂载到${UNION}"
    mount -t aufs -o br:$1=rw aufs ${UNION}
    if [ $? -ne 0 ]; then 
         error "无法将$1以aufs可写模式挂载到${UNION}."
         usage 1
    else
-	info "完成."
+	green "完成."
    fi
 }
 function remount_aufs_w () {
-   info "将$1以aufs可写模式挂载到${UNION}"
+   plain "将$1以aufs可写模式挂载到${UNION}"
    mount -o remount,add:0:$1=rw aufs ${UNION}
    if [ $? -ne 0 ]; then 
         error "无法将$1以aufs可写模式挂载到${UNION}."
         usage 1
    else
-	info "完成."
+	green "完成."
    fi
 }
 function remount_aufs_r () {
-   info "将$1以aufs只读模式挂载到${UNION}"
+   plain "将$1以aufs只读模式挂载到${UNION}"
    [ -f ${UNION}/var/lib/pacman/db.lck ] && rm -f ${UNION}/var/lib/pacman/db.lck
    [ -d ${UNION}/dev ] && rm -rf ${UNION}/dev
    mount -o remount,mod:$1=ro aufs ${UNION}
@@ -536,7 +548,7 @@ function remount_aufs_r () {
         error "无法将$1以aufs只读模式挂载到${UNION}."
         usage 1
    else
-	info "完成."
+	green "完成."
    fi
 }
 
@@ -544,18 +556,18 @@ function sync_database () {
 
    # Arch软件仓数据库存放位置
    SYNC="${WORK_DIR}/sync"
-   info "将Arch软件仓库信息更新到${SYNC} ..."
+   msg2 "将Arch软件仓库信息更新到${SYNC} ..."
    [ ! -d ${SYNC} ] && mkdir -p "${SYNC}"
    mount_aufs_w "${SYNC}"
    [ ! -d ${UNION}/var/lib/pacman ] && mkdir -p ${UNION}/var/lib/pacman
    [ -f ${UNION}/var/lib/pacman/db.lck ] && rm -f ${UNION}/var/lib/pacman/db.lck
-   info "现在开始更新软件仓..."
+   plain "现在开始更新软件仓..."
    $PACMAN -Sy --noprogressbar --noconfirm --config "${PACMANCONF}" -fr "${UNION}"
    remount_aufs_r "${SYNC}"
-   info "Arch软件仓库信息更新完成。"
-   echo "导出可用软件包清单到${PACKLIST}/available.list"
+   msg2 "Arch软件仓库信息更新完成。"
+   plain "导出可用软件包清单到${PACKLIST}/available.list"
    find "${SYNC}/var/lib/pacman/sync" -type d -name "*" | sed -r "s|${SYNC}/var/lib/pacman/sync||g" >${PACKLIST}/available.list
-   echo "完成."
+   green "完成."
 }
 function pac_install () {
 
@@ -581,7 +593,7 @@ function pac_install () {
 			fi
 		fi
 	else
-		#echo "软件包${pkgname} 安装成功! "
+		#green "软件包${pkgname} 安装成功! "
 		break
 	fi
    done
@@ -601,7 +613,7 @@ function pac_remove () {
 			error "$pkgname 还没有安装，无法卸载。"
 		fi
 	else
-		echo "软件包${pkgname} 卸载成功! "
+		green "软件包${pkgname} 卸载成功! "
 		break
 	fi
    done	
@@ -609,47 +621,47 @@ function pac_remove () {
 
 function pac_clean () {
 
-   info "清理无用文件..."
+   msg2 "清理无用文件..."
 
-   echo "清理aufs文件系统临时文件.wh.* "
+   plain "清理aufs文件系统临时文件.wh.* "
    for tmp in "$(find ${MODULEDIR} -type f -name .wh.* )"; do rm -f $tmp; done
-   echo "完成!"
+   green "完成!"
 
-   echo "删除为宿主系统创建的内核镜像文件..."
+   plain "删除为宿主系统创建的内核镜像文件..."
    default_image=$(grep "default_image" ${INSTROOT}/etc/mkinitcpio.d/kernel*.preset | cut -d "=" -f2)
    fallback_image=$(grep "fallback_image" ${INSTROOT}/etc/mkinitcpio.d/kernel*.preset | cut -d "=" -f2)
    [ "x${default_image}" != "x" ] && rm -f "${INSTROOT}${default_image}"
    [ "x${fallback_image}" != "x" ] && rm -f "${INSTROOT}${fallback_image}"
-   echo "完成!"
+   green "完成!"
 
-   echo "删除pamcan产生的垃圾文件..."
+   plain "删除pamcan产生的垃圾文件..."
    for tmp in "$(find ${MODULEDIR} -name *.pacnew -name *.pacsave -name *.pacorig)"; do rm -f $tmp; done
-   echo "完成!"
+   green "完成!"
 
-   echo "删除指定的文件夹..."
+   plain "删除指定的文件夹..."
    kill_dirs="dev var/cache/man var/cache/pacman var/log/* var/mail tmp/* initrd ${DELDIR}"
    #for tmp in ${kill_dirs}; do [ -e "${UNION}/${x}" ] && rm -rf "${UNION}/${tmp}"; done
    for tmp in ${kill_dirs}; do
 	for tmp_dir in $(find ${MODULEDIR} -type d -name "$(basename $tmp)" | grep "$tmp"); do rm -rf ${tmp_dir}; done
    done
-   echo "完成!"
+   green "完成!"
 
-   echo "删除图标缓存文件..."
+   plain "删除图标缓存文件..."
    for tmp in "$(find ${MODULEDIR} -type f -name *.cache)"; do rm -f $tmp; done
-   echo "完成!"
+   green "完成!"
 
    if [ "${CUT_LOCALE}" = "y" ]; then
-	echo "删除${REMAIN_LOCALE}外的语言文件、帮助文件、X语言文件..."
+	plain "删除${REMAIN_LOCALE}外的语言文件、帮助文件、X语言文件..."
 	for tmpdir in $(find ${MODULEDIR} -type d -name "locale"); do
 		for tmp in "$(find $tmpdir/* -maxdepth 0 -type d | grep -v "[${REMAIN_LOCALE}]$")"; do rm -rf $tmp; done
 	done
-   	echo "完成!"
+   	green "完成!"
    fi
 }
 
 cmd_extramodules_install () {
 
-   info "开始制作附加程序模块——每个模块只有一个软件"
+   msg2 "开始制作附加程序模块——每个模块只有一个软件"
 
    # 初始化附加模块安装目录
    [ -d ${EXTRA_MODULES_INS_DIR} ] && rm -rf ${EXTRA_MODULES_INS_DIR} && mkdir -p ${EXTRA_MODULES_INS_DIR}
@@ -667,9 +679,9 @@ cmd_extramodules_install () {
    	# 导出已经安装的软件清单(独立模块，含版本信息)
 	$PACMAN -Q -r ${EXTRA_MODULES_INS_DIR}/${mod} >> ${EX_MODULE_LIST}
    done
-
+   msg2 "附加模块 $EXTRAMODULES 安装完成."
    # 卸载UNION
-   info "卸载aufs件系统 ${UNION}."
+   msg2 "卸载aufs件系统 ${UNION}."
    umount -l ${UNION}
 
    # 模块清理，删除不需要的文件
@@ -699,8 +711,8 @@ cmd_install () {
    mkdir -p ${PACKLIST}
 
    [ -d ${UNION}/dev ] && rm -rf ${UNION}/dev
-   info "开始进行Archlive的制作..."
-   info "开始将$LISTDIR里面的软件安装/更新到对应模块文件夹"
+   msg "开始进行Archlive的制作..."
+   msg2 "开始将$LISTDIR里面的软件安装/更新到对应模块文件夹"
    # 更新软件仓库信息
    sync_database
    [ -f ${PACKLIST}/updated.list ] && rm -f ${PACKLIST}/updated.list
@@ -710,27 +722,27 @@ cmd_install () {
         [ ! -d ${MODULEDIR}/${mod} ] && mkdir -p ${MODULEDIR}/${mod}
 	remount_aufs_w ${MODULEDIR}/${mod}	
 	
-	echo "将模块软件清单整理后输出（去除被#注释的）"
+	plain "将模块软件清单整理后输出（去除被#注释的）"
  	cat "${PROFILE_DIR}/$LISTDIR/${mod}.list" | sed -r "s/#.*//g" | sed -r "/^$/d" |sort >${PACKLIST}/${mod}.new
-	echo "完成."
+	plain "完成."
 
 	# 如果已经存在对应模块，则将对应软件包及版本信息输出到清单并根据已经安装的软件升级
 	pacman_local_data=${MODULEDIR}/${mod}/var/lib/pacman/local
 	if [ -d ${pacman_local_data} ] && [ "x$(find ${pacman_local_data} -type f -name "desc")" != "x" ]; then
 		$PACMAN -Q -r ${MODULEDIR}/${mod} > ${PACKLIST}/${mod}.old
-		echo "已安装的程序及版本信息已导出到文件${PACKLIST}/${mod}.old"
+		plain "已安装的程序及版本信息已导出到文件${PACKLIST}/${mod}.old"
 		$PACMAN -Su -f --needed --noconfirm --config "${PACMANCONF}" -fr "${UNION}" >/dev/null
-		echo "已有程序升级完成."
+		plain "已有程序升级完成."
 		# 安装清单中需要的但没有被安装的软件包
 		# 无-d选项的
 		pkgname=$(awk 'NR==FNR{a[$1];b[$2]}NR>FNR{if (!($2 in a)) {if (!($1 in a)) {print $0}}}' ${PACKLIST}/${mod}.old ${PACKLIST}/${mod}.new | grep -v "\-d")
-		if [ "x$pkgname" != "x" ]; then echo "$pkgname 是新添加的(需要检测依赖关系)，需要安装..."; pac_install; fi
+		if [ "x$pkgname" != "x" ]; then plain "$pkgname 是新添加的(需要检测依赖关系)，需要安装..."; pac_install; fi
 		# 有 -d 选项的
 		pkgname=$(awk 'NR==FNR{a[$1];b[$2]}NR>FNR{if (!($2 in a)) {if (!($1 in a)) {print $0}}}' ${PACKLIST}/${mod}.old ${PACKLIST}/${mod}.new | grep "\-d")
-		if [ "x$pkgname" != "x" ]; then echo "$pkgname 是新添加的(无需检测依赖关系)，需要安装..."; pac_install; fi
+		if [ "x$pkgname" != "x" ]; then plain "$pkgname 是新添加的(无需检测依赖关系)，需要安装..."; pac_install; fi
 		# 删除已经安装的多余的软件
 		pkgname=$(awk 'BEGIN {OFS="\t"}NR==FNR{a[$0];b[$2]}NR>FNR{if (!($1 in b)) {if (!($1 in a)) {print $1}}}' ${PACKLIST}/${mod}.new ${PACKLIST}/${mod}.old)
-		if [ "x$pkgname" != "x" ]; then echo "$pkgname 在新清单中没有，需要删除..."; pac_remove; fi
+		if [ "x$pkgname" != "x" ]; then plain "$pkgname 在新清单中没有，需要删除..."; pac_remove; fi
 	fi
 	if [ "x$(find ${MODULEDIR}/${mod} -type f -name "desc")" = "x" ]; then
 		touch ${PACKLIST}/${mod}.old
@@ -762,7 +774,7 @@ cmd_install () {
 	fi
 	# 检测包含内核的模块中，文件系统模块是否齐全
 	if [ -d ${MODULEDIR}/${mod}/lib/modules ]; then
-		info "检查目标系统是否有足够的文件系统模块: aufs,squashfs等..."
+		msg2 "检查目标系统是否有足够的文件系统模块: aufs,squashfs等..."
 		[ $(ls ${MODULEDIR}/${mod}/lib/modules | wc -l) -ge 2 ] && (error "目标系统中内核模块有两个或者两个以上的版本" && exit 1)
 		fs_system="aufs squashfs"
 		case ${ZIP_MODE} in 1|2) fs_system="${fs_system} sqlzma unlzma";; esac
@@ -771,11 +783,11 @@ cmd_install () {
 				if [ "${KERNEL_KEY_FS_INCLUDED}" != "y" ]; then
 					error "目标系统不包含必须的${fs_type}文件系统模块, 请修改${PROFILE_DIR}/$LISTDIR/${mod}.list" && exit 1
 				else
-					echo "目标系统不包含必须的${fs_type}文件系统被编入了内核，在制作启动镜像的时候忽略${fs_type}找不到的错误."
+					warn "目标系统不包含必须的${fs_type}文件系统被编入了内核，在制作启动镜像的时候忽略${fs_type}找不到的错误."
 				fi
 			fi
 		done
-		echo "完成!"
+		green "完成!"
 	fi
 
 	# 不用软件包定制也可以本地化支持
@@ -791,23 +803,23 @@ cmd_install () {
 	if [ -f ${PACKLIST}/${mod}.old ]; then
 		diff -ruNa ${PACKLIST}/${mod}.old ${PACKLIST}/mod_${mod}.new | grep "^[-,+][a-zA-Z]" > ${PACKLIST}/${mod}.list
 		if [ "x$(cat ${PACKLIST}/${mod}.list)" != "x" ]; then
-			echo "${mod} 模块更新内容(-表示删除的包，+表示新加入的包)" >>${PACKLIST}/updated.list	
+			green "${mod} 模块更新内容(-表示删除的包，+表示新加入的包)" >>${PACKLIST}/updated.list	
 			cat ${PACKLIST}/${mod}.list >>${PACKLIST}/updated.list
 		fi
 	fi
 	# 只在安装到包含$module-init-tools 软件包模块时才更新内核依赖关系
 	if [ -x ${MODULEDIR}/${mod}/sbin/depmod ]; then
-		info "基于${INSTROOT}更新内核依赖关系..."
+		plain "基于${INSTROOT}更新内核依赖关系..."
 		chroot ${UNION} depmod -a
-		echo "完成!"
+		green "完成!"
 	fi
 	if [ -f ${MODULEDIR}/${mod}/etc/rc.conf ]; then
 		# 备份Arch原始启动关机脚本，以便Larchin安装
-		echo "备份Arch原始启动关机脚本，以便Larchin安装"
+		plain "备份Arch原始启动关机脚本，以便Larchin安装"
 		for larchsavefile in ${MODULEDIR}/${mod}/etc/{rc.sysinit,rc.shutdown,rc.local}; do
 			cp -f ${larchsavefile} ${larchsavefile}.larchsave
 		done
-		echo "完成!"
+		green "完成!"
    	fi
 	# 重新只读挂载以进行下一个模块
 	remount_aufs_r ${MODULEDIR}/${mod}
@@ -820,14 +832,14 @@ cmd_install () {
    $PACMAN -Q -r ${UNION} > ${PKGFILE}
 
    # 卸载UNION
-   [ "x$(grep $UNION /proc/mounts)" != "x" ] && info "卸载aufs件系统 ${UNION}." && umount -l ${UNION}
+   [ "x$(grep $UNION /proc/mounts)" != "x" ] && msg2 "卸载aufs件系统 ${UNION}." && umount -l ${UNION}
 
    # 清理不需要的文件
    [ "${RE_EXTRAMODULES}" = "y" ] && pac_clean
 }
 
 function mksquashfs_module () {
-   echo "将${1}用$MKSQUASHFS进行压缩..."
+   plain "将${1}用$MKSQUASHFS进行压缩..."
    [ -d ${1}/usr/share/fonts ] && chmod 755 ${1}/usr/share/fonts
    [ -d ${1}/etc/fonts ] && chmod 755 ${1}/etc/fonts
    OPTION="-noappend ${OPTION}"
@@ -837,11 +849,11 @@ function mksquashfs_module () {
 	$MKSQUASHFS ${1} ${2} ${OPTION}
    fi
    chmod 0755 ${2}
-   echo "${2}创建完成."
+   green "${2}创建完成."
 }
 cmd_extramodules_squash () {
 
-   info "压缩独立程序模块..."
+   plain "压缩独立程序模块..."
    if [ "${RE_EXTRAMODULES}" = "y" ]; then
 	start=$(date +%s)
    fi
@@ -851,13 +863,13 @@ cmd_extramodules_squash () {
 	target_file="${EXTRA_MODULES_TARGET}/$(ls ${EXTRA_MODULES_INS_DIR}/${module_dir}/var/lib/pacman/local)-$ARCH.${EXT}"
 	mksquashfs_module "${source_dir}" "${target_file}"
    done
-   [ "${RE_EXTRAMODULES}" = "y" ] && info "独立模块在 $(echo $start $(date +%s) | awk '{ printf "%0.2f",($2-$1)/60 }') 分钟内完成压缩."
+   [ "${RE_EXTRAMODULES}" = "y" ] && green "独立模块在 $(echo $start $(date +%s) | awk '{ printf "%0.2f",($2-$1)/60 }') 分钟内完成压缩."
 }
 
 cmd_squash () {
 
    [ ! -d ${MODULEDIR} ] && (error "${WORK_DIR}下还没有安装模块，请先执行 install命令." && usage 1)
-   info "创建squash模块..."
+   msg "创建squash模块..."
    start=$(date +%s)
 
    #squashfs压缩的基本模块存放位置 比如0_000_core-i686.sqfs
@@ -875,7 +887,7 @@ cmd_squash () {
    done
 
    if [ "${USE_OVERLAY}" = "y" ] && [ -d ${WORK_DIR}/overlay ]; then 
-	info "创建附加设置模块overlay.${EXT}..."
+	msg2 "创建附加设置模块overlay.${EXT}..."
 	OVERLAY="${WORK_DIR}/overlay"
 	mksquashfs_module  "${OVERLAY}" "${IMGROOT}/${CDNAME}/base/overlay.${EXT}"
    fi
@@ -884,7 +896,7 @@ cmd_squash () {
    [ "${RE_EXTRAMODULES}" != "y" ] && cmd_extramodules_squash
 
    minutes=$(echo $start $(date +%s) | awk '{ printf "%0.2f",($2-$1)/60 }')
-   info "模块在 $minutes 分钟内完成创建."
+   green "模块在 $minutes 分钟内完成创建."
 }
 
 check_kernel () {
@@ -906,25 +918,25 @@ check_kernel () {
 }
 cmd_boot_kernel_image () {
 
-   info "准备archlive内核及内核镜像"
+   msg "准备archlive内核及内核镜像"
 
    # 判断archlive内核镜像配置文件是否存在
    [ ! -e "${CPIOCONFIG}" ] && error "错误: live系统启动内核镜像配置文件 '${CPIOCONFIG}' 不存在, 退出." && usage 1
 
    check_kernel
-   info "目标系统内核程序包为 $ker_pkgname 版本 $ker_pkg_ver "
+   plain "目标系统内核程序包为 $ker_pkgname 版本 $ker_pkg_ver "
 
    [ ! -d "${IMGROOT}/${CDNAME}/boot" ] && mkdir -p "${IMGROOT}/${CDNAME}/boot"
    right_ker_file="n"    # KER_FILE 在配置文件archlive.conf中定义，默认为vmlinuz26
    case $(grep "boot/${KER_FILE}" $basedir/var/lib/pacman/local/${ker_pkgname}-${ker_pkg_ver}/files) in boot/$KER_FILE) right_ker_file="y";; esac
    [ "${right_ker_file}" = "n" ] && error "目标系统的内核文件名不是${KER_FILE}，请再次检查配置文件和目标系统的内核程序包..." && usage 1
    [ -f ${basedir}/boot/${KER_FILE} ] && cp -f "${basedir}/boot/${KER_FILE}" "${IMGROOT}/${CDNAME}/boot/${KER_FILE}"
-   [ -f "${IMGROOT}/${CDNAME}/boot/${KER_FILE}" ] && echo "已经拷贝内核文件${KER_FILE}到目标镜像文件夹下."
+   [ -f "${IMGROOT}/${CDNAME}/boot/${KER_FILE}" ] && green "已经拷贝内核文件${KER_FILE}到目标镜像文件夹下."
 
-   info "创建${CDNAME}  live系统启动的内核镜像..."
-	echo "配置文件 ${CPIOCONFIG}, "
-	echo "基于目录 ${basedir}, "
-	echo "archlive内核版本 ${kernelver} "
+   plain "创建${CDNAME}  live系统启动的内核镜像..."
+	green "配置文件 ${CPIOCONFIG}, "
+	green "基于目录 ${basedir}, "
+	green "archlive内核版本 ${kernelver} "
 
    if [ "${QUIET}" = "y" ]; then append_cmd=">/dev/null"; else append_cmd=""; fi
    sh $MKINITCPIO -c "${CPIOCONFIG}" -b "${basedir}" -k "${kernelver}" -g \
@@ -933,14 +945,14 @@ cmd_boot_kernel_image () {
 	error "错误: 内核镜像创建失败..."
 	usage 1
    else
-	info "内核启动镜像制作成功！"
+	green "内核启动镜像制作成功！"
    fi
 }
 
 create_base_module (){
 
    [ ! -d ${WORK_DIR} ] && (warn "工作目录还不存在，请先 install..." && exit 1)
-   info "创建基本模块archlive.sqfs ..."
+   msg "创建基本模块archlive.sqfs ..."
 
    live_dir=./linux-live
    . ${live_dir}/liblinuxlive || exit 1
@@ -948,7 +960,7 @@ create_base_module (){
    ADDLOCALE=$(echo ${REMAIN_LOCALE} | tr "|" " ")
 
    # 基本目录、临时工作目录
-   echo "创建基本模块临时目录${base_module_tree}" | tee -a ${LOG}
+   msg2 "创建基本模块临时目录${base_module_tree}" | tee -a ${LOG}
    base_module_tree="${MODULEDIR}/archlive"
    [ -d ${base_module_tree} ] && rm -rf ${base_module_tree}
    mkdir -p ${base_module_tree}
@@ -959,7 +971,7 @@ create_base_module (){
    LOG=${BUILDLOG}/create_base_module.log
    [ -f ${LOG} ] && rm -f ${LOG}
 
-   echo "检查目标系统内核版本及模块安装目录" | tee -a ${LOG}
+   msg2 "检查目标系统内核版本及模块安装目录" | tee -a ${LOG}
    check_kernel
    if [ "x$(echo $basedir | grep "${WORK_DIR}")" = "x" ]; then
 	error "工作目录下还没有安装有内核程序包的模块，或者安装不完整..."
@@ -972,10 +984,10 @@ create_base_module (){
    host_kernel_dep_file=$(find /lib -type f -name "modules.dep")
    host_kernel_dir=${host_kernel_dep_file%/modules.dep}
 
-   echo "创建基本目录" | tee -a ${LOG}
+   msg2 "创建基本目录" | tee -a ${LOG}
    mkdir -p ${base_module_tree}/{etc,dev,bin,mnt,proc,lib,sys,tmp,var/log} | tee -a ${LOG}
 
-   echo "创建基本设备文件"  | tee -a ${LOG}
+   msg2 "创建基本设备文件"  | tee -a ${LOG}
    mknod ${base_module_tree}/dev/console c 5 1
    mknod ${base_module_tree}/dev/fb0 c 29 0
    mknod ${base_module_tree}/dev/null c 1 3
@@ -988,7 +1000,7 @@ create_base_module (){
 	mknod ${base_module_tree}/dev/tty$i c 4 $i;
    done
 
-   #echo "拷贝文件到基本模块"
+   msg2 "拷贝文件到基本模块"
    touch ${base_module_tree}/etc/{m,fs}tab
    cat ${live_dir}/liblinuxlive | sed -r 's/^LIVECDNAME=.*/LIVECDNAME="'$LIVECDNAME'"/' > ${base_module_tree}/liblinuxlive
    cp ${live_dir}/{linuxrc,cleanup} ${base_module_tree}
@@ -1015,7 +1027,7 @@ create_base_module (){
    # 创建相关目录
    mkdir -p ${base_module_tree}/lib/modules/${kernelver}/kernel/fs
 
-   # 拷贝内核模块：文件系统 设备驱动等 
+   msg2 "拷贝内核模块：文件系统 设备驱动等"
    FS="aufs squashfs fuse isofs udf fat vfat ntfs ext3 ext4 btrfs reiserfs xfs nls"
    BASE_DRIVERS="cdrom ide"
    USB="storage host/ehci-hcd.ko host/ohci-hcd.ko host/uhci-hcd.ko"
@@ -1039,18 +1051,18 @@ create_base_module (){
 	done
    done
 
-   # 加入archlive.conf中设置的语言支持
+   msg2 "加入archlive.conf中设置的语言支持"
    if [ "$ADDLOCALE" != "" ]; then
 	localeroot=$(find ${MODULEDIR} -type f -name "locale.alias" | grep -v "${base_module_tree}" | grep -v "${EXTRA_MODULES_INS_DIR}")
 	localeroot=${localeroot%/usr/share/locale/locale.alias}
-	echo "拷贝locale文件, 支持的locale: $ADDLOCALE" | tee -a ${LOG}
+	plain "拷贝locale文件, 支持的locale: $ADDLOCALE" | tee -a ${LOG}
 	copylocales ${localeroot} ${base_module_tree} $ADDLOCALE
    fi
 
-   echo "更新基本模块内核模块依赖关系" | tee -a ${LOG}
+   msg2 "更新基本模块内核模块依赖关系" | tee -a ${LOG}
    depmod -a -b ${base_module_tree}
 
-   echo "用squash压缩基本模块中的usr drivers目录..." | tee -a ${LOG}
+   msg2 "用squash压缩基本模块中的usr drivers目录..." | tee -a ${LOG}
    mksquashfs_module ${base_module_tree}/usr ${base_module_tree}/usr.lzm
    chmod ago-x ${base_module_tree}/usr.lzm
    rm -Rf ${base_module_tree}/usr/*
@@ -1058,22 +1070,22 @@ create_base_module (){
    chmod ago-x ${base_module_tree}/drivers.lzm
    rm -Rf ${base_module_tree}/lib/modules/${kernelver}/kernel/drivers/*
 
-   echo "用squash压缩基本模块..." | tee -a ${LOG}
+   msg2 "用squash压缩基本模块..." | tee -a ${LOG}
    mksquashfs_module ${base_module_tree} ${IMGROOT}/${CDNAME}/archlive.sqfs
    chmod ago-x ${IMGROOT}/${CDNAME}/archlive.sqfs
    chmod 0444 "${IMGROOT}/${CDNAME}/archlive.sqfs"
-   echo "基本模块archlive.sqfs制作完成!"
+   msg2 "基本模块archlive.sqfs制作完成!"
 }
 
 
 cmd_img () {
 
-   info "准备制作镜像所需要的程序模块..."
+   msg "准备制作镜像所需要的程序模块..."
 
    #判断${IMGROOT}下的模块是否是需要的——由${CONFIG_FILE}: archlive.conf定义
-   #如果不需要则备份到${WORK_DIR}/no_need_modules下
-   NO_Need_Modules=${WORK_DIR}/no_need_modules
-   [ ! -d ${NO_Need_Modules} ] && mkdir -p ${NO_Need_Modules}
+   
+   msg2 "清理不需要的模块到${NO_NEED_MODULES_DIR}下"
+   [ ! -d ${NO_NEED_MODULES_DIR} ] && mkdir -p ${NO_NEED_MODULES_DIR}
    for module_file in $(find ${IMGROOT} -name "*.sqfs" -o -name "*.lzm"); do
 	needed="n"
 	case ${module_file} in */overlay.${EXT}) case ${USE_OVERLAY} in y) needed="y" && break;; esac;; esac
@@ -1082,49 +1094,49 @@ cmd_img () {
 	case $MODULES in *${module_name}*) needed="y" && break;; esac
 	case $EXTRAMODULES in *${module_name}*) needed="y" && break;; esac
 	if [ "$needed" = "n" ]; then
-		info "$module_file未在${CONFIG_FILE}中定义，移除到${NO_Need_Modules}下"
-		mv -f $module_file ${NO_Need_Modules}/
+		warn "$module_file未在${CONFIG_FILE}中定义，移除到${NO_NEED_MODULES_DIR}下"
+		mv -f $module_file ${NO_NEED_MODULES_DIR}/
 	fi
    done
-   echo "镜像目录模块清理完毕."
+   green "镜像目录模块清理完毕."
 
    # 拷贝附加程序模块
    if [ -d $EXTRAPACKAGEDIR ]; then
 	[ ! -d ${EXTRA_PACKAGE_TARGET} ] && mkdir -p ${EXTRA_PACKAGE_TARGET}
-   	for mod in $EXTRAPACKAGEDIR/*.$EXT; do info "拷贝附加程序模块 $mod ..." && cp $mod ${EXTRA_PACKAGE_TARGET}/; done
-	echo "完成."
+   	for mod in $EXTRAPACKAGEDIR/*.$EXT; do msg2 "拷贝附加程序模块 $mod ..." && cp $mod ${EXTRA_PACKAGE_TARGET}/; done
+	green "完成."
    fi
 
-   echo "将软件清单放到镜像目录中"
+   msg2 "将软件清单放到镜像目录中"
    cp -f ${PKGFILE} ${IMGROOT}/${CDNAME}/${CDNAME}.list
-   echo "完成."
+   green "完成."
 
-   info "准备启动文件..."
+   msg2 "准备启动文件..."
    bootflags=""
    if [ "$BOOT" = "grub" -o "$BOOT" = "grub-gfx" ]; then
 	[ ! -d "${IMGROOT}/boot/grub" ] && mkdir -p "${IMGROOT}/boot/grub"
 	bootfile=$(find $MODULEDIR -type f -name "stage2_eltorito")
 	if [ ! "x${bootfile}" = "x" ]; then
 		cp -f ${bootfile} ${IMGROOT}/boot/grub/
-		echo "找到引导程序${bootfile}，使用该引导程序覆盖cd-root里可能已经存在的引导程序."
+		plain "找到引导程序${bootfile}，使用该引导程序覆盖cd-root里可能已经存在的引导程序."
 	else
 		if [ -f ${IMGROOT}/boot/grub/stage2_eltorito ]; then
 			error "目标系统中没有安装$BOOT，使用cd-root中原来的引导程序..."
 		else
-			echo "目标系统中没有选择安装$BOOT, 在宿主系统中查找..."
+			warn "目标系统中没有选择安装$BOOT, 在宿主系统中查找..."
 			grub --help 2>&1 >/dev/null
 			[ $? -ne 0 ] && error "宿主系统也不存在$BOOT. 无法继续!请选择其他引导程序或者安装$BOOT..." && usage 1
 			bootfile=$(find $MODULEDIR -type f -name "stage2_eltorito")
 			if [ ! "x${bootfile}" = "x" ]; then
 				cp -f ${bootfile} ${IMGROOT}/boot/grub/
-				echo "在${bootfile_dir}目录下找到引导程序."
+				green "在${bootfile_dir}目录下找到引导程序."
 			else 
 				error "宿主系统也没有安装$BOOT. 无法继续!请选择其他引导程序或者安装$BOOT..." && usage1
 			fi
 		fi
 	fi
 	bootflags="-b boot/grub/stage2_eltorito"
-	echo "引导程序$BOOT 准备完毕."
+	green "引导程序$BOOT 准备完毕."
    fi
    if [ "$BOOT" = "syslinux" -o "$BOOT" = "isolinux" ]; then
 	[ ! -d ${IMGROOT}/boot/isolinux ] && mkdir -p ${IMGROOT}/boot/isolinux
@@ -1132,24 +1144,24 @@ cmd_img () {
 	bootfile_dir=${bootfile%/isolinux.bin}
 	if [ ! "x${bootfile_dir}" = "x" ]; then
 		cp -f ${bootfile_dir}/*.* ${IMGROOT}/boot/isolinux/
-		echo "找到引导程序${bootfile}，使用该引导程序覆盖cd-root里可能已经存在的引导程序."
+		green "找到引导程序${bootfile}，使用该引导程序覆盖cd-root里可能已经存在的引导程序."
 	else
 		if [ -f ${IMGROOT}/boot/isolinux/isolinux.bin ]; then
 			warn "目标系统中没有选择安装$BOOT, 使用cd-root中原来的引导程序..."
 		else
-			echo "目标系统中没有选择安装$BOOT, 在宿主系统中查找..."
+			warn "目标系统中没有选择安装$BOOT, 在宿主系统中查找..."
 			bootfile=$(find /usr -type f -name "isolinux.bin")
 			bootfile_dir=${bootfile%/isolinux.bin}
 			if [ ! "x${bootfile_dir}" = "x" ]; then
 				cp -f ${bootfile_dir}/*.* ${IMGROOT}/boot/isolinux/ 
-				echo "在${bootfile_dir}目录下找到引导程序."
+				green "在${bootfile_dir}目录下找到引导程序."
 			else 
 				error "宿主系统也没有安装$BOOT. 无法继续!请选择其他引导程序或者安装$BOOT..." && usage1
 			fi
 		fi
 	fi
 	bootflags="-b boot/isolinux/isolinux.bin -c boot/isolinux/boot.cat"
-	echo "引导程序$BOOT 准备完毕."
+	green "引导程序$BOOT 准备完毕."
    fi
    if [ "$BOOT" = "grub2" ]; then
 	[ ! -d ${IMGROOT}/boot/grub ] && mkdir -p ${IMGROOT}/boot/grub
@@ -1167,14 +1179,14 @@ cmd_img () {
 		reiserfs gfxterm ntfs
 	cat ${IMGROOT}/boot/grub/{cdboot.img,core.img} > ${IMGROOT}/boot/grub/grub2cd.bin
 	bootflags="-b boot/grub/grub2cd.bin"
-	echo "引导程序$BOOT 准备完毕."
+	green "引导程序$BOOT 准备完毕."
    fi
    if [ "$IMG_TYPE" = "img" ]; then
-        info "基于目录${IMGROOT}创建USB DISK镜像img..."
+        msg2 "基于目录${IMGROOT}创建USB DISK镜像img..."
         ${START_DIR}/mkusbimg "${IMGROOT}" "${IMGNAME}"
    fi
    if [ "$IMG_TYPE" = "iso" ]; then
-        info "使用mkisofs v${mkisofs_version}来创建ISO镜像, 基于目录${IMGROOT}..."
+        msg2 "使用mkisofs v${mkisofs_version}来创建ISO镜像, 基于目录${IMGROOT}..."
         qflag=""
         [ "${QUIET}" = "y" ] && qflag="-q"
         mkisofs ${qflag} -v -J -R -D -r -l $bootflags -uid 0 -gid 0 \
@@ -1185,7 +1197,7 @@ cmd_img () {
             -o "${IMGNAME}" "${IMGROOT}"
        isohybrid "${IMGNAME}"
        md5sum "${IMGNAME}" > "${IMGNAME}".md5
-       info "${IMGNAME}制作成功！"
+       green "${IMGNAME}制作成功！"
    fi
 }
 ###--------------------------------------主程序调用------------------------------------------------------
@@ -1200,4 +1212,4 @@ case ${CMD_NAME} in
 	all) cmd_prepare; cmd_install; cmd_squash; cmd_boot_kernel_image; prepare_base_module; cmd_img ;;
 	*) error "错误的命令" && usage 1 ;;
 esac
-info "程序执行 ${APPNAME} $cmdline 结束!"
+msg "程序执行 ${APPNAME} $cmdline 结束!"

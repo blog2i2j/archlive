@@ -8,7 +8,11 @@
 #kernel26
 # The Linux Kernel and modules    91.01MB
 #-d kernel26-archlive-mini
--d kernel26-git
+-d kernel26-base-git
+# Archlive定制编译包，只包含内核及其模块，不包含源代码
+-d kernel26-firmware-git
+# Archlive定制编译包，只包含fw驱动
+#-d kernel26-git
 # Archlive定制包，包含Archlive内核及模块.加入了kernel官方补丁、gentoo及Fedora官方补丁、UTF-8中文补丁、reiser4补丁.
 # 包含aufs squashfs4 文件系统模块
 # 91.01MB
@@ -45,5 +49,5 @@
 -d zd1211-firmware
 #
 -d virtualbox-modules
-#virtualbox-ose-additions-modules
+-d virtualbox-ose-additions-modules
 #Kernel modules for VirtualBox Guest Additions  0.16MB  已经包含于基本模块

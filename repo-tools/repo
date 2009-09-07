@@ -8,6 +8,7 @@
 # 2、从指定googlecode SVN或者hg仓库检出
 # 2、将本地修改的更新回googlecode指定项目的svn或者hg仓库
 #
+#----2009-09-06更新： 更新list_in_project函数
 #----2009-08-22更新： 让hg push的时候如果不成功则不停尝试——Googlecode的Broken pipe问题
 #----2009-07-09更新： 加入wiki hg仓库的支持
 #----2009-07-04更新： 将googlecode用户信息存放到~/.googlecode下
@@ -103,23 +104,38 @@ if [ "${command_name}" = "clone" ] && [ "x${HGDIR}" = "x" ]; then HGDIR=$Project
 [ "${command_name}" = "update" -o "${command_name}" = "push" ] && [ "x$MESSAGE" = "x" ] && \
 	(warn "必须说明更新描述，以方便大家查看修改内容, $APPNAME -m "更新说明" -p 项目名 命令" && usage 1)
 
-# 列出googlecode项目的文件
+# 列出已经上传googlecode项目的文件
 list_in_project ()
 {
-    links -no-g -dump http://code.google.com/p/$1/downloads/list | grep "gz" >$2
-    if [ $? -ne 0 ]; then error "无法访问http://code.google.com/p/${Project_Name}/downloads/list，请检查网络连接"; fi
+    local i=0
+    local n=0
+    local a=0
+    echo "正从http://$1.googlecode.com 上导出下载清单到$2, 请稍候..."
+    [ -f tmp ] && rm -f tmp
+    while [ $a -le 100 ]; do
+	links -no-g -dump "http://code.google.com/p/$1/downloads/list?start=$i" | grep "gz" | awk '{print $1}' | sort >>tmp
+	if [ $? -ne 0 ]; then
+		error "无法访问http://code.google.com/p/${Project_Name}/downloads/list，请检查网络连接"
+		break
+	fi
+	n=$(wc tmp | awk '{print $1}')
+	let i+=100
+	a=`expr $i - $n`
+    done
+    sort tmp >$2 && rm -f tmp
+    [ $n -gt 0 ] && echo "完成! 总共 $n 条记录."
 }
-
 do_upload ()
 {
     checkuser
     # 上传到googlecode的python脚本
-    if [ ! -f $START/googlecode_upload.py ]; then
+    UPLOADPROG="/usr/bin/googlecode_upload.py"
+    if [ ! -f $START/googlecode_upload.py ] && [ ! -x ${UPLOADPROG} ]; then
 	wget -q http://support.googlecode.com/svn/trunk/scripts/googlecode_upload.py
 	mv googlecode_upload.py $START/
 	chmod +x $START/googlecode_upload.py
+	UPLOADPROG="$START/googlecode_upload.py"
     fi
-    UPLOADPROG="$START/googlecode_upload.py"
 
     #上传文件不支持wiki，换为对应的项目下载地址
     Project_Name=${Project_Name#wiki.}
@@ -155,7 +171,7 @@ do_upload ()
 			else
 				info "正将$target/$file上传到 http://${Project_Name}.googlecode.com"
 			fi
-			python ${UPLOADPROG} -s $file -p ${Project_Name} -u ${UserName} -w ${Passwd} -l $file $target/$file
+			python ${UPLOADPROG} -s ${file##*/} -p ${Project_Name} -u ${UserName} -w ${Passwd} -l $file $target/$file
 			if [ $? -ne 0 ]; then
 			 	error "上传$file失败，请检查网络或者googlecode，网络不通或者该文件已经上传?" 
 			fi
@@ -177,7 +193,7 @@ do_upload ()
 	fi
 	if [ "x$exist" = "x" -o "$exclude" = n ]; then
 		echo "现在将$target上传到googlecode"
-		python ${UPLOADPROG} -s $target -p ${Project_Name} -u ${UserName} -w ${Passwd} -l $target $target
+		python ${UPLOADPROG} -s ${target##*/} -p ${Project_Name} -u ${UserName} -w ${Passwd} -l $target $target
 	fi
     fi
     list_in_project ${Project_Name} $START/new.list

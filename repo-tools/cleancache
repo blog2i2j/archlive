@@ -1,8 +1,7 @@
 #!/bin/bash
-# 本脚本来自于http://www.linuxsir.org/bbs/thread348435.html
+# 本脚本最开始算法来自于http://www.linuxsir.org/bbs/thread348435.html
 # 版权归原作者， 风险自己承担！ 哈
 # 
-#
 # 选择删除缓存中陈旧的包，可选择保留 N 个最新版本
 # 也许需要管理员权限，且删除前需要确认
 KEEPN=2 ### 要保留几个最新版本的包?
