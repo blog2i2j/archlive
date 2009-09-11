@@ -151,11 +151,22 @@ sudo chown -R 1001:100 ${workdir}
 
 # Check out the scripts
 # 检出制作代码
+if [ "${lang%_*}x" = "zhx" ]; then
+	echo "现在下载制作工作，请稍候..."
+else
+	echo "Checking out the make tools, pls. wait a while..."
+fi
 cd ${workdir}
+[ -d mkarchlive ] && rm -rf mkarchlive
 hg clone http://mkarchlive.archlive.googlecode.com/hg mkarchlive
 
 # Start to build
 # 开始自动创建
+if [ "${lang%_*}x" = "zhx" ]; then
+	echo "现在开始制作，请稍候..."
+else
+	echo "Starting to work..."
+fi
 cd mkarchlive
 log=${workdir}/$(whoami)-$(date +'%F-%H%M%S').log
 sudo sh ./mkarchlive -f all ${workdir} 2>&1 | tee ${log}

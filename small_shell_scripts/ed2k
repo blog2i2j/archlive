@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# 本脚本来自于http://www.linuxsir.org/bbs/thread356337.html
+# 作者 jiuny0209
+
+# 用法：
+# ed2k -d | -k | address
+# description:
+# ed2k "ed2k://........." (下載ed2k:// ftp:// http://的檔案，記的ed2k://兩邊要雙引號)
+# ed2k -d (下載/usr/local/share/jstc/address檔案裡面所有的地址）
+# ed2k -k (kill mlnet)
+# ed2k (完全不加參數會顯示，現在的上下載的流量。）
+# 小技巧：配合watch這個指令來用，可以像圖形介面一樣觀察輸入輸出的流量。
+
+#可以下載http://,ftp://,ed2k://, -d(dllinks的意思)
+
+share="/usr/local/share/jstc"
+address_file="$share/address"
+
+look ()
+{
+
+    echo -e "vd\nq" | nc localhost 4000 | grep --binary-file=text -e "\[D" | wc -l
+    echo -e "bw_stats\nq" | nc localhost 4000 | grep --binary-file=text -e "Down:"
+}
+
+if test $# -lt 1
+then
+    look
+#    telnet localhost 4000
+elif test $# -eq 1 -a $(echo "$1" | grep http://) != ""
+then
+    address="$1"
+    echo -e "http ""$address""\nq" | nc localhost 4000
+    look
+elif test $# -eq 1 -a $(echo "$1" | grep -e -d) != ""
+then
+    echo -e "dllinks $address_file\nq" | nc localhost 4000
+    look
+elif test $# -eq 1 -a $(echo "$1" | grep -e -k) != ""
+then
+    echo -e "kill\nq" | nc localhost 4000
+    look
+elif test $# -eq 1 -a $(echo "$1" | grep ed2k://) != ""
+then
+    address="$1"
+    echo -e "dllink ""$address""\nq" | nc localhost 4000
+    look
+fi
