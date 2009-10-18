@@ -6,6 +6,7 @@
 #
 # 本脚本最开始算法来自于http://www.linuxsir.org/bbs/thread348435.html
 #
+# 2009-09-21 更新：执行前先等待5秒。。。
 
 APPNAME=$(basename "${0}")
 cmdline=$@
@@ -21,10 +22,10 @@ usage ()
    echo "       如果将本脚本放在系统PATH指定的目录中，则:"
    echo "       sudo ${APPNAME} [选项] -r <预清理目录>"
    echo " 选项:"
-   echo "    -r <DIR>         DIR 为预清理的目录;"
-   echo "    -n <n>  	     n: 保留版本数默认为$KEEPN;"
    echo "    -f               删除前无需确认;"
    echo "    -a               没有安装的所有包也删除;"
+   echo "    -r <DIR>         DIR 为预清理的目录;"
+   echo "    -n <n>  	     n: 保留版本数默认为$KEEPN;"
    echo "    -h               本帮助信息."
    exit $1
 }
@@ -59,7 +60,6 @@ warn() {
 	fi
 }
 error() {
-	local mesg=$1; shift
 	if [ $COLORMSG -eq 1 ]; then
 		echo -e "\033[1;31m==> $(gettext "ERROR:")\033[1;0m\033[1;1m $@\033[1;0m"
 	else
@@ -67,17 +67,17 @@ error() {
 	fi
 }
 
-[ "$EUID" != "0" ] && (error "错误: 必须以root用户运行本制作脚本." && usage 1)
+[ "$EUID" != "0" ] && error "错误: 必须以root用户运行本制作脚本." && usage 1
 
 # 检测、配置输入的命令
-while getopts 'f:a:n:r:h:?' arg; do
+while getopts ':fahn:r:' arg; do
    case "${arg}" in
 	n) KEEPN="${OPTARG}";;
-	r) DIR="${OPTARG}" ;;
+	r) DIR="${OPTARG}";;
 	f) ;;
 	a) ;;
-        h|?) usage 0 ;;
-        *) error "无效参数 '${arg}'"; usage 1 ;;
+        h) usage 0;;
+        ?) error "输入$@包含无效参数 "; usage 1;;
    esac
 done
 
@@ -89,17 +89,23 @@ fi
 
 msg "输入的参数:$cmdline"
 result="清理目录$DIR, 保留${KEEPN}个版本"
-case $cmdline in *-a*) result="${result}, 删除系统没有安装的软件包"
+case $cmdline in *a*) result="${result}, 删除系统没有安装的软件包"
 			if [ ! -f /etc/pacman.conf ]; then error "操作系统不是Arch, 出现问题后果自负！"; fi
 			;;
 		esac
-case $cmdline in *-f*) result="${result}, 删除先无需确认";; esac
+case $cmdline in *f*) result="${result}, 删除先无需确认";; esac
 
 msg ${result}
 
 shift `expr $OPTIND - 1`
 
-[ "x$@" != "x" ] && error "无法识别的参数或命令: $@" && usage 1
+if ! [ "x${@}" = "x" ]; then
+	error "无法识别的参数或命令: $@"
+	usage 1
+fi
+
+msg "5秒后继续，Ctrl+C 可以结束本脚本的执行。"
+sleep 5
 
 IFS=$'\n' 
 SED='s/\(.\{1,\}\)-\([0-9][a-z0-9\._]*-[0-9\.]\{1,\}\)/\1 \2/'

@@ -1,0 +1,20 @@
+#!/bin/bash
+# findnearest
+# 根据经、纬度找最近的城市
+
+# Usage: findnearest latitude longitude
+# Ex.  findnearest  17.976227 -66.111016
+
+#lat=$1
+#long=$2
+#result=$(lynx -dump "http://maps.google.com/maps/geo?output=csv&oe=utf-8&ll=$lat,$long")
+#echo $result | cut -f3- -d,
+
+####---------wget one
+#!/bin/bash
+# findnearest
+# Usage: findnearest latitude longitude
+# Ex.  findnearest  17.976227 -66.111016
+lat=$1
+long=$2
+wget -q "http://maps.google.com/maps/geo?output=csv&oe=utf-8&ll=$lat,$long" -O -|cut -f3- -d,

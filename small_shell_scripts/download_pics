@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# http://blog.chinaunix.net/u3/96727/showart_2055889.html
+# 从指定网页文件 下载其连接的图片
+
+base_url="$1"
+base_url="${base_url%/*.html*}"
+
+i=1
+while true; do
+    path="$base_url/$i.html"
+    img_url="$(wget -O - "$path" | sed -n -e '/small\./d' -e '/upload/s/.*\(http:.*\.jpg\).*/\1/p')"
+    if [ "$img_url" == "" ]; then break; fi
+
+    echo "---$img_url---"
+    img_file="$(echo "$img_url" | sed 's#^http://[^/]*/##')"
+    echo "--$img_file=="
+    img_dir="${img_file%/*}"
+    echo "$img_dir"
+
+    mkdir -p "$img_dir"
+    if ! [ -f "$img_file" ]; then
+        wget -O "$img_file" "$img_url"
+    fi
+
+    (( ++i ))
+done

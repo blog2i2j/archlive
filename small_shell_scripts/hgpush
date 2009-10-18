@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# Carbon Jiao <carbonjiao alt gmail dot com>
+#
+APPNAME=$(basename "${0}")
+[ -f ~/.googlecode ] && source ~/.googlecode
+
+usage ()
+{
+    echo " Usage:  ${APPNAME} [options]"
+    echo " options:"
+    echo "    -p Project_Name"
+    echo "    -u UserName	    Googlecode Username"
+    echo "    -w Passwd         Googlecode passwd, http://code.google.com/hosting/settings"
+    echo "    -h                This help."
+    exit $1
+}
+
+while getopts 'p:u:w:f:?:h' arg; do
+    case "${arg}" in
+	p) Project_Name="${OPTARG}" ;;
+	u) UserName="${OPTARG}" ;;
+	w) Passwd="${OPTARG}" ;;
+	f) FORCE="y" ;;
+    h|?) usage 0 ;;
+    *) usage 1 ;;
+    esac
+done
+
+[ "x$Project_Name" = "x" ] && (echo "you must point a googlecode project name" && usage 1) 
+
+# Start push
+i=1
+while true; do
+	echo "The $i time to try"
+	hg push https://${UserName%@gmail.com}%40gmail.com:$Passwd@${Project_Name}.googlecode.com/hg
+	[ $? -eq 0 ] && break
+	let i+=1
+done
