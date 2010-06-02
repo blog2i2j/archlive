@@ -5,6 +5,7 @@
 # Archlive <http://archlive.google.com>
 #
 # 本脚本最开始算法来自于http://www.linuxsir.org/bbs/thread348435.html
+# 原作者  veryxp
 #
 # 2009-09-21 更新：执行前先等待5秒。。。
 

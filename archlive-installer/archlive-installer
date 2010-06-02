@@ -8,6 +8,7 @@
 # 2、加入Arch官方安装方式（爱好者自行加入）;
 # 3、多语言支持;
 #
+#2010-05-05 更新：全新安装调用官方的Archlinux-installer
 #2009-07-12 更新：优化代码 
 #2009-07-07 更新：如果启动前插入了U盘或者移动硬盘导致盘符错乱(sdb...)也可以正常安装.
 #		使用pamcan.static来安装arch软件包，以使在非Arch环境下也可以采用本安装程序根据软件清单快速安装Arch GNU/Linux。
@@ -37,9 +38,9 @@ fi
 
 APPNAME=$(basename "${0}")
 
-NEW_INSTALL="全新安装Arch GNU/Linux(暂未支持)——按照官方安装指南一步步安装"
-NEW_QUICKINSTALL="全新快速安装Arch GNU/Linux——利用软件清单快速自定义安装"
-COPY_INSTALL="复制安装Archlive——将目前运行的这个Archlive系统复制安装到目标分区"
+NEW_INSTALL="全新安装Arch GNU/Linux--按照官方安装指南一步步安装"
+NEW_QUICKINSTALL="全新快速安装Arch GNU/Linux--利用软件清单快速自定义安装"
+COPY_INSTALL="复制安装Archlive--将目前运行的这个Archlive系统复制安装到目标分区"
 #INSTALL_LOG=/tmp/install.log_$$
 # 修正后可以用随机数
 INSTALL_LOG=/tmp/install.log
@@ -49,7 +50,7 @@ if df | grep /tmp/install; then umount /tmp/install; fi
 if [ ! -d /tmp/install ]; then mkdir -p /tmp/install; fi
 INSTALL=/tmp/install
 
-warnlogo="/usr/share/icons/gOS3_Icons/scalable/actions/process-stop.svg"
+warnlogo="process-stop.svg"
 
 
 # 选择关闭或者取消程序的提示
@@ -93,7 +94,7 @@ function errors ()
 		case $? in
 		0)
 			Xdialog --title "$BOX_TITLE" --backtitle "错误信息:" --no-cancel \
-				--textbox ${INSTALL_LOG} 20 64
+				--fixed-font --textbox ${INSTALL_LOG} 20 64
 			exit 255
 			;;
 		1)
@@ -130,7 +131,7 @@ function prepare_softlist ()
 		1)
 			echo "$(date +%D" "%T)	没有编辑$SOFT_LIST，采用默认的配置，如下： " >>${INSTALL_LOG}
 			Xdialog --title "没有编辑$SOFT_LIST" --backtitle "采用默认的$SOFT_LIST:" --no-cancel \
-				--textbox $SOFT_LIST 20 64
+				--fixed-font --textbox $SOFT_LIST 20 64
 			;;
 		255)	
 			closed_prog
@@ -140,7 +141,7 @@ function prepare_softlist ()
 	1)
 		echo "$(date +%D" "%T)	没有选择编辑$SOFT_LIST，采用默认的配置，如下： " >>${INSTALL_LOG}
 		Xdialog --title "不编辑$SOFT_LIST" --backtitle "采用默认的$SOFT_LIST:" --no-cancel \
-				--textbox $SOFT_LIST 20 64
+				--fixed-font --textbox $SOFT_LIST 20 64
 		;;
 	255)
 		closed_prog
@@ -248,7 +249,7 @@ function edit_pacmanconf ()
 		1)
 			echo "$(date +%D" "%T)	没有编辑$MIRROR_LIST，采用默认的配置，如下： " >>${INSTALL_LOG}
 			Xdialog --title "没有编辑$MIRROR_LIST" --backtitle "采用默认的$MIRROR_LIST:" --no-cancel \
-				--textbox $MIRROR_LIST 20 64
+				--fixed-font --textbox $MIRROR_LIST 20 64
 			;;
 		255)	
 			closed_prog
@@ -305,7 +306,7 @@ function edit_pacmanconf ()
 function prepare_pacmanconf ()
 {
 	if [ -f /tmp/pacman.conf ]; then rm -f /tmp/pacman.conf; fi
-	if [ -f $(pwd)/pacman.conf }; then
+	if [ -f $(pwd)/pacman.conf ]; then
 		cp $(pwd)/pacman.conf /tmp/pacman.conf
 	else
 		cp /etc/pacman.conf /tmp/pacman.conf
@@ -896,7 +897,8 @@ function prepare_bootloader ()
 function newinstall ()
 {
 	echo "$(date +%D" "%T)----${NEW_INSTALL}----开始----" >>${INSTALL_LOG}
-	no_this_function
+	sudo sh /arch/setup
+	#no_this_function
 	#finished_installation
 }
 
