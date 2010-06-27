@@ -108,14 +108,9 @@ shift `expr $OPTIND - 1`
 msg "5秒后继续，Ctrl+C 可以结束本脚本的执行。"
 sleep 5
 
-IFS=$'\n' 
-SED='s/\(.\{1,\}\)-\([0-9][a-z0-9\._]*-[0-9\.]\{1,\}\)/\1 \2/'
-# 用 sed 将缓存中的文件名分割成“软件包名称＋空格＋其它后缀的形式，并存入数组 list
-# 如 xsel-1.2.0-1.pkg.tar.gz 在数组中就是 "xsel -1.2.0-1.pkg.tar.gz"
-# 使用下面的 ls 命令请确保文件是按名称排序
-cd "$DIR" && list=(`ls -1 | sed -e "$SED"`)
-
-for ((i=0; i<${#list[@]}; i++)); do
+action_clean ()
+{
+   for ((i=0; i<${#list[@]}; i++)); do
 	# 取得软件包名称
 	pkgname=${list[$i]% *}    
 
@@ -166,4 +161,25 @@ for ((i=0; i<${#list[@]}; i++)); do
 		dup=1 # 重置计数器 dup
 	fi
 	prev="$pkgname" # 记录上一个包的名称
-done
+   done
+}
+
+IFS=$'\n' 
+SED='s/\(.\{1,\}\)-\([0-9][a-z0-9\._]*-[0-9\.]\{1,\}\)/\1 \2/'
+# 用 sed 将缓存中的文件名分割成“软件包名称＋空格＋其它后缀的形式，并存入数组 list
+# 如 xsel-1.2.0-1.pkg.tar.gz 在数组中就是 "xsel -1.2.0-1.pkg.tar.gz"
+# 使用下面的 ls 命令请确保文件是按名称排序
+
+cd "$DIR"
+if [ "$(ls -1 *-i686.* | wc -l)" -gt 0 ]; then
+	list=(`ls -1 *-i686.* | sed -e "$SED"`)
+	action_clean
+fi
+if [ "$(ls -1 *-x86_64.* | wc -l)" -gt 0 ]; then
+	list=(`ls -1 *-x86_64.* | sed -e "$SED"`)
+	action_clean
+fi
+if [ "$(ls -1 *-any.* | wc -l)" -gt 0 ]; then
+	list=(`ls -1 *-any.* | sed -e "$SED"`)
+	action_clean
+fi

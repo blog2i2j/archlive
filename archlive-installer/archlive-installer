@@ -418,7 +418,7 @@ function mount_all_partitions ()
 		--infobox "挂载还没有挂载的分区到/mnt下，请稍候！" 0 0
 	local FSTAB FSTABTMP
 	FSTAB="/etc/fstab"
-	[ -f $FSTAB ] && (rm -f $FSTAB) && (touch $FSTAB)
+	[ -f $FSTAB ] && (mv -f $FSTAB $FSTAB.bak) && (touch $FSTAB)
 	list_partition_devices | while read DEVICE; do
 		MNT=$(device_mountdir $DEVICE)
 		FS=$(device_filesystem $DEVICE)

@@ -108,3 +108,7 @@ find ${UNION}/usr/share/man/* -maxdepth 0 -type d ! -name "man*" ! -iregex ".*zh
 
 info "将配置文件释放到目标分区"
 tar -xzvpf $(pwd)/overlay.tgz -C ${UNION}
+
+# 创建启动镜像
+# ${UNION}/sbin/mkinitcpio -b ${UNION} -c ${UNION}/etc/mkinitcpio.conf -g ${UNION}/boot/kernel26.img
+# ${UNION}/sbin/mkinitcpio -b ${UNION} -c ${UNION}/etc/mkinitcpio.conf -g ${UNION}/boot/kernel26-fallback.img -S autodetect
